@@ -84,7 +84,7 @@ class flameAppFramework(object):
 
     def __init__(self):
         self.name = self.__class__.__name__
-        self.bundle_name = 'flameMenuSG'
+        self.bundle_name = 'flameMenuKITSU'
         # self.prefs scope is limited to flame project and user
         self.prefs = {}
         self.prefs_user = {}
@@ -110,12 +110,11 @@ class flameAppFramework(object):
                 os.path.expanduser('~'),
                  'Library',
                  'Caches',
-                 'Shotgun',
                  self.bundle_name)
         elif sys.platform.startswith('linux'):
             self.prefs_folder = os.path.join(
                 os.path.expanduser('~'),
-                '.shotgun',
+                '.config',
                 self.bundle_name)
 
         self.prefs_folder = os.path.join(
@@ -422,6 +421,15 @@ class flameKitsuConnector(object):
         self.prefs_user = self.framework.prefs_dict(self.framework.prefs_user, self.name)
         self.prefs_global = self.framework.prefs_dict(self.framework.prefs_global, self.name)
 
+        site_packages_folder = os.path.join(
+            os.path.dirname(__file__),
+            'site-packages'
+        )
+        pprint(site_packages_folder)
+        if not os.path.isdir(site_packages_folder):
+            self.log('unable to find site packages folder at %s' % site_packages_folder)
+
+        '''
         # defautl values are set here
         if not 'user signed out' in self.prefs_global.keys():
             self.prefs_global['user signed out'] = False
@@ -480,13 +488,13 @@ class flameKitsuConnector(object):
 
         from PySide2 import QtWidgets
         self.mbox = QtWidgets.QMessageBox()
+'''
 
     def log(self, message):
         self.framework.log('[' + self.name + '] ' + message)
 
     def log_debug(self, message):
         self.framework.log_debug('[' + self.name + '] ' + message)
-
 
 
 # --- FLAME STARTUP SEQUENCE ---
@@ -581,7 +589,7 @@ def app_initialized(project_name):
     global apps
     app_framework = flameAppFramework()
     print ('PYTHON\t: %s initializing' % app_framework.bundle_name)
-    kitsuConnector = flameShotgunConnector(app_framework)
+    kitsuConnector = flameKitsuConnector(app_framework)
     load_apps(apps, app_framework, kitsuConnector)
 
 try:
