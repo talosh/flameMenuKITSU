@@ -423,7 +423,7 @@ class flameKitsuConnector(object):
 
         site_packages_folder = os.path.join(
             os.path.dirname(__file__),
-            'site-packages'
+            '.site-packages'
         )
         pprint(site_packages_folder)
         if not os.path.isdir(site_packages_folder):
