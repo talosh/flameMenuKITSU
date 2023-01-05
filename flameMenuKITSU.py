@@ -429,18 +429,25 @@ class flameKitsuConnector(object):
         
         if not os.path.isdir(site_packages_folder):
             self.log('unable to find site packages folder at %s' % site_packages_folder)
-            gazu = None
+            self.gazu = None
         else:
             sys.path.insert(0, site_packages_folder)
             import gazu
+            self.gazu = gazu
             sys.path.pop(0)
 
-        pprint (gazu)
-
-        '''
         # defautl values are set here
         if not 'user signed out' in self.prefs_global.keys():
             self.prefs_global['user signed out'] = False
+
+        if not self.prefs_global.get('user signed out', False):
+            self.log_debug('requesting for user')
+            try:
+                self.get_user()
+            except Exception as e:
+                self.log_debug(pformat(e))
+        
+        '''
         if not 'tank_name_overrides' in self.prefs.keys():
             # tank_name_overrides are {'project_id': 'overrided_tank_name'}
             self.prefs['tank_name_overrides'] = {}
