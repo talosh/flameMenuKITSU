@@ -431,6 +431,9 @@ class flameKitsuConnector(object):
             self.log('unable to find site packages folder at %s' % site_packages_folder)
             gazu = None
         else:
+            sys.path.insert(site_packages_folder)
+            pprint (sys.path)
+            sys.path.pop()
             pprint (sys.path)
 
         '''
