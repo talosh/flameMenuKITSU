@@ -511,6 +511,26 @@ class flameKitsuConnector(object):
     def log_debug(self, message):
         self.framework.log_debug('[' + self.name + '] ' + message)
 
+    def get_user(self, *args, **kwargs):
+        self.login_dialog()
+
+    def login_dialog(self):
+        from PySide2 import QtWidgets, QtCore
+
+        window = QtWidgets.QDialog()
+        window.setMinimumSize(450, 180)
+        window.setWindowTitle('Set Project Location')
+        window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
+        window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        window.setStyleSheet('background-color: #313131')
+
+        screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
+
+
+        if window.exec_():
+            pass
+
 
 # --- FLAME STARTUP SEQUENCE ---
 # Flame startup sequence is a bit complicated
