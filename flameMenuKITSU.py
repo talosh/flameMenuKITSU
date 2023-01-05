@@ -18,6 +18,7 @@ from pprint import pformat
 __version__ = 'v0.0.1 dev 001'
 
 menu_group_name = 'Menu(KITSU)'
+app_name = 'flameMenuKITSU'
 DEBUG = False
 
 class flameAppFramework(object):
@@ -425,9 +426,12 @@ class flameKitsuConnector(object):
             os.path.dirname(__file__),
             '.site-packages'
         )
-        pprint(site_packages_folder)
+
+        sys.exit()
+        
         if not os.path.isdir(site_packages_folder):
             self.log('unable to find site packages folder at %s' % site_packages_folder)
+
 
         '''
         # defautl values are set here
