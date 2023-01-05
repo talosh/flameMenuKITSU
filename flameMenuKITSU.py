@@ -426,12 +426,12 @@ class flameKitsuConnector(object):
             os.path.dirname(__file__),
             '.site-packages'
         )
-
-        sys.exit()
         
         if not os.path.isdir(site_packages_folder):
             self.log('unable to find site packages folder at %s' % site_packages_folder)
-
+            gazu = None
+        else:
+            pprint (sys.path)
 
         '''
         # defautl values are set here
