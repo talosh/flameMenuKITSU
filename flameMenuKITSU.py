@@ -432,9 +432,10 @@ class flameKitsuConnector(object):
             gazu = None
         else:
             sys.path.insert(0, site_packages_folder)
-            pprint (sys.path)
+            import gazu
             sys.path.pop(0)
-            pprint (sys.path)
+
+        pprint (gazu)
 
         '''
         # defautl values are set here
