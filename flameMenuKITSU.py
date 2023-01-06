@@ -517,9 +517,14 @@ class flameKitsuConnector(object):
         self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api')
         self.kitsu_user = self.prefs_user.get('kitsu_user', 'username')
         self.kitsu_pass = self.prefs_user.get('kitsu_pass', '')
-
-        gazu_client = self.gazu.client.create_client(self.kitsu_host)
-        self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = gazu_client)
+        try:
+            gazu_client = self.gazu.client.create_client(self.kitsu_host)
+        except Exception as e:
+            pprint (e)
+        try:
+            self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = gazu_client)
+        except Exception as e:
+            pprint (e)
 
         self.login_dialog()
 
