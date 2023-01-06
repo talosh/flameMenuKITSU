@@ -535,7 +535,6 @@ class flameKitsuConnector(object):
 
         vbox1 = QtWidgets.QVBoxLayout()
         hbox1 = QtWidgets.QHBoxLayout()
-        hbox1.setAlignment(QtCore.Qt.AlignVCenter)
 
         lbl_Host = QtWidgets.QLabel('Host', window)
         lbl_Host.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
@@ -546,15 +545,16 @@ class flameKitsuConnector(object):
 
         hbox1.addWidget(lbl_Host)
 
-        # txt_tankName = QtWidgets.QLineEdit(self.txt_tankName_text, wgt_tankName)
-        # txt_tankName.setFocusPolicy(QtCore.Qt.ClickFocus)
-        # txt_tankName.setMinimumSize(280, 28)
-        # txt_tankName.move(128,0)
-        # txt_tankName.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
-        # txt_tankName.textChanged.connect(txt_tankName_textChanged)
+        self.txt_tankName_text = 'test'
+        txt_tankName = QtWidgets.QLineEdit(self.txt_tankName_text, window)
+        txt_tankName.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_tankName.setMinimumSize(280, 28)
+        txt_tankName.move(128,0)
+        txt_tankName.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+        txt_tankName.textChanged.connect(txt_tankName_textChanged)
         # txt_tankName.setVisible(False)
 
-        # hbox1.addWidget(txt_tankName)
+        hbox1.addWidget(txt_tankName)
 
 
         vbox1.addLayout(hbox1)
