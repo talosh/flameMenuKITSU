@@ -519,11 +519,17 @@ class flameKitsuConnector(object):
         from PySide2 import QtWidgets, QtCore
 
         self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api')
+        self.kitsu_user = self.prefs_user.get('kitsu_user', 'username')
+        self.kitsu_pass = self.prefs.user.get('kitsu_pass', '')
 
-        def txt_tankName_textChanged():
-            pass
-            # self.txt_tankName_text = txt_tankName.text()
-            # storage_root_paths.setText(calculate_project_path())
+        def txt_KitsuHost_textChanged():
+            self.kitsu_host_text = txt_KitsuHost.text()
+
+        def txt_KitsuUser_textChanged():
+            self.kitsu_user_text = txt_KitsuUser.text()
+
+        def txt_KitsuPassword_textChanged():
+            self.kitsu_pass_text = txt_KitsuPassword.text()
 
         window = QtWidgets.QDialog()
         window.setMinimumSize(450, 180)
@@ -551,7 +557,7 @@ class flameKitsuConnector(object):
         txt_KitsuHost.setMinimumSize(280, 28)
         txt_KitsuHost.move(128,0)
         txt_KitsuHost.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
-        txt_KitsuHost.textChanged.connect(txt_tankName_textChanged)
+        txt_KitsuHost.textChanged.connect(txt_KitsuHost_textChanged)
         # txt_tankName.setVisible(False)
 
         hbox1.addWidget(lbl_Host)
@@ -564,11 +570,17 @@ class flameKitsuConnector(object):
         lbl_User.setMaximumHeight(28)
         lbl_Host.setMinimumWidth(108)
         lbl_Host.setMinimumWidth(108)
-
         lbl_User.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
-        hbox2.addWidget(lbl_User)
+        txt_KitsuUser = QtWidgets.QLineEdit(self.kitsu_user, window)
+        txt_KitsuUser.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_KitsuUser.setMinimumSize(280, 28)
+        txt_KitsuUser.move(128,0)
+        txt_KitsuUser.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+        txt_KitsuUser.textChanged.connect(txt_KitsuUser_textChanged)
 
+        hbox2.addWidget(lbl_User)
+        hbox2.addWidget(txt_KitsuUser)
 
 
         vbox1.addLayout(hbox1)
