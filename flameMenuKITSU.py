@@ -552,7 +552,7 @@ class flameKitsuConnector(object):
         txt_tankName.textChanged.connect(txt_tankName_textChanged)
         txt_tankName.setVisible(False)
 
-        hbox1.addWidget(txt_tankName)
+        # hbox1.addWidget(txt_tankName)
 
 
         vbox1.addLayout(hbox1)
