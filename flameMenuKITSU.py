@@ -602,6 +602,9 @@ class flameKitsuConnector(object):
         vbox1.addLayout(hbox2)
         vbox1.addLayout(hbox3)
 
+        hbox_spacer = QtWidgets.QHBoxLayout()
+        vbox1.addLayout(hbox_spacer)
+
         select_btn = QtWidgets.QPushButton('Login', window)
         select_btn.setFocusPolicy(QtCore.Qt.NoFocus)
         select_btn.setMinimumSize(100, 28)
