@@ -522,7 +522,9 @@ class flameKitsuConnector(object):
 
         def login():
             host = self.kitsu_host
-            if not self.kitsu_host.endswith('/api/'):
+            print (host)
+            if not host.endswith('/api/'):
+                print ('why we are here?')
                 if self.kitsu_host.endswith('/'):
                     host = host + 'api/'
                 else:
