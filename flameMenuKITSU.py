@@ -556,6 +556,10 @@ class flameKitsuConnector(object):
     def login_dialog(self):
         from PySide2 import QtWidgets, QtCore
 
+        self.kitsu_host_text = self.kitsu_host
+        self.kitsu_user_text = self.kitsu_user
+        self.kitsu_pass_text = self.kitsu_pass
+
         def txt_KitsuHost_textChanged():
             self.kitsu_host_text = txt_KitsuHost.text()
             # storage_root_paths.setText(calculate_project_path())
@@ -676,8 +680,10 @@ class flameKitsuConnector(object):
                 'user': self.kitsu_user_text,
                 'password': self.kitsu_pass_text
             }
+            pprint (result)
         else:
             # cancel
+            pprint (result)
             pass
 
         return result
