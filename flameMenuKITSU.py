@@ -535,15 +535,16 @@ class flameKitsuConnector(object):
 
         vbox1 = QtWidgets.QVBoxLayout()
         hbox1 = QtWidgets.QHBoxLayout()
+        hbox1.setAlignment(QtCore.Qt.AlignVCenter)
 
-        lbl_sgProjectFolder = QtWidgets.QLabel('Host', window)
-        lbl_sgProjectFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_sgProjectFolder.setMinimumHeight(28)
-        lbl_sgProjectFolder.setMaximumHeight(28)
-        lbl_sgProjectFolder.setAlignment(QtCore.Qt.AlignLeft)
+        lbl_Host = QtWidgets.QLabel('Host', window)
+        lbl_Host.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_Host.setMinimumHeight(28)
+        lbl_Host.setMaximumHeight(28)
+        lbl_Host.setAlignment(QtCore.Qt.AlignLeft)
 
 
-        hbox1.addWidget(lbl_sgProjectFolder)
+        hbox1.addWidget(lbl_Host)
 
         # txt_tankName = QtWidgets.QLineEdit(self.txt_tankName_text, wgt_tankName)
         # txt_tankName.setFocusPolicy(QtCore.Qt.ClickFocus)
