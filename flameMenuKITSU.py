@@ -522,7 +522,6 @@ class flameKitsuConnector(object):
 
         def login():
             host = self.kitsu_host
-            print (host)
             if not host.endswith('/api/'):
                 if self.kitsu_host.endswith('/'):
                     host = host + 'api/'
@@ -531,19 +530,20 @@ class flameKitsuConnector(object):
             elif host.endswith('/api'):
                 host = host + ('/')
 
-            print (host)
-
             try:
                 self.gazu_client = self.gazu.client.create_client(host)
                 self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = self.gazu_client)
                 return True
             except Exception as e:
                 pprint (e)
-                return False
+            return False
 
-        while not login():
+        login_status = False
+
+        while not login_status:
             credentials = self.login_dialog()
             pprint (credentials)
+            login_status = login()
             # if not credentials:
             #    break
             #else:
