@@ -670,8 +670,6 @@ class flameKitsuConnector(object):
         vbox.addLayout(hbox4)
 
         window.setLayout(vbox)
-
-        result = {}
         
         if window.exec_():
             # login
@@ -680,12 +678,11 @@ class flameKitsuConnector(object):
                 'user': self.kitsu_user_text,
                 'password': self.kitsu_pass_text
             }
-            pprint (result)
         else:
             # cancel
-            pprint (result)
-            pass
+            result = {}
 
+        pprint (result)
         return result
 
 
