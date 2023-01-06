@@ -599,7 +599,7 @@ class flameKitsuConnector(object):
 
         vbox1.addLayout(hbox1)
         vbox1.addLayout(hbox2)
-
+        vbox1.addLayout(hbox3)
 
         select_btn = QtWidgets.QPushButton('Login', window)
         select_btn.setFocusPolicy(QtCore.Qt.NoFocus)
