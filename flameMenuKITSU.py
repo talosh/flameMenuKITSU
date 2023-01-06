@@ -538,9 +538,9 @@ class flameKitsuConnector(object):
 
         lbl_Host = QtWidgets.QLabel('Host', window)
         lbl_Host.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_Host.setMinimumHeight(28)
+        lbl_Host.setMinimumHeight(80)
         lbl_Host.setMaximumHeight(28)
-        lbl_Host.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        lbl_Host.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
 
         hbox1.addWidget(lbl_Host)
