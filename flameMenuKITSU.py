@@ -667,16 +667,20 @@ class flameKitsuConnector(object):
 
         window.setLayout(vbox)
 
+        result = {}
+        
         if window.exec_():
             # login
-            return {
+            result = {
                 'host': self.kitsu_host_text,
                 'user': self.kitsu_user_text,
                 'password': self.kitsu_pass_text
             }
         else:
             # cancel
-            return {}
+            pass
+
+        return result
 
 
 # --- FLAME STARTUP SEQUENCE ---
