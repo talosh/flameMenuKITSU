@@ -526,7 +526,7 @@ class flameKitsuConnector(object):
             pprint (e)
         try:
             print ('logging in')
-            self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = gazu_client)
+            self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = self.gazu_client)
         except Exception as e:
             pprint (e)
 
