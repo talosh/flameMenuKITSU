@@ -528,6 +528,32 @@ class flameKitsuConnector(object):
         screen_res = QtWidgets.QDesktopWidget().screenGeometry()
         window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
 
+        vbox1 = QtWidgets.QVBoxLayout()
+
+        select_btn = QtWidgets.QPushButton('Select', window)
+        select_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        select_btn.setMinimumSize(100, 28)
+        select_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        select_btn.clicked.connect(window.accept)
+
+        cancel_btn = QtWidgets.QPushButton('Cancel', window)
+        cancel_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        cancel_btn.setMinimumSize(100, 28)
+        cancel_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        cancel_btn.clicked.connect(window.reject)
+
+        hbox2 = QtWidgets.QHBoxLayout()
+        hbox2.addWidget(cancel_btn)
+        hbox2.addWidget(select_btn)
+
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.setMargin(20)
+        vbox.addLayout(vbox1)
+        vbox.addLayout(hbox2)
+
+        window.setLayout(vbox)
 
         if window.exec_():
             pass
