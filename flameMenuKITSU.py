@@ -513,14 +513,18 @@ class flameKitsuConnector(object):
         self.framework.log_debug('[' + self.name + '] ' + message)
 
     def get_user(self, *args, **kwargs):
+        # get saved credentials
+        self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api')
+        self.kitsu_user = self.prefs_user.get('kitsu_user', 'username')
+        self.kitsu_pass = self.prefs_user.get('kitsu_pass', '')
+
+        gazu_client = self.gazu.client.create_client(self.kitsu_host)
+        self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = gazu_client)
+
         self.login_dialog()
 
     def login_dialog(self):
         from PySide2 import QtWidgets, QtCore
-
-        self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api')
-        self.kitsu_user = self.prefs_user.get('kitsu_user', 'username')
-        self.kitsu_pass = self.prefs_user.get('kitsu_pass', '')
 
         def txt_KitsuHost_textChanged():
             self.kitsu_host_text = txt_KitsuHost.text()
@@ -634,9 +638,11 @@ class flameKitsuConnector(object):
         window.setLayout(vbox)
 
         if window.exec_():
-            print ('exec')
+            # login
+            pass
         else:
-            print ('else')
+            # cancel
+            pass
 
 
 # --- FLAME STARTUP SEQUENCE ---
