@@ -547,7 +547,7 @@ class flameKitsuConnector(object):
 
         hbox1 = QtWidgets.QHBoxLayout()
 
-        lbl_Host = QtWidgets.QLabel('KITSU Host: ', window)
+        lbl_Host = QtWidgets.QLabel('Server: ', window)
         lbl_Host.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
         lbl_Host.setFixedSize(108, 28)
         lbl_Host.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
@@ -565,7 +565,7 @@ class flameKitsuConnector(object):
 
         hbox2 = QtWidgets.QHBoxLayout()
 
-        lbl_User = QtWidgets.QLabel('User Name: ', window)
+        lbl_User = QtWidgets.QLabel('Email: ', window)
         lbl_User.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
         lbl_User.setFixedSize(108, 28)
         lbl_User.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
