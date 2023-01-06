@@ -574,7 +574,7 @@ class flameKitsuConnector(object):
         lbl_Host.setMinimumWidth(108)
         lbl_User.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
-        txt_KitsuUser = QtWidgets.QLineEdit(self.kitsu_host, window)
+        txt_KitsuUser = QtWidgets.QLineEdit(self.kitsu_user, window)
         txt_KitsuUser.setFocusPolicy(QtCore.Qt.ClickFocus)
         txt_KitsuUser.setMinimumSize(280, 28)
         txt_KitsuUser.move(128,0)
@@ -582,8 +582,7 @@ class flameKitsuConnector(object):
         txt_KitsuUser.textChanged.connect(txt_KitsuUser_textChanged)
 
         hbox2.addWidget(lbl_User)
-
-
+        hbox2.addWidget(txt_KitsuUser)
 
         vbox1.addLayout(hbox1)
         vbox1.addLayout(hbox2)
