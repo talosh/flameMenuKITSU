@@ -563,7 +563,7 @@ class flameKitsuConnector(object):
             self.kitsu_user_text = txt_KitsuUser.text()
 
         def txt_KitsuPass_textChanged():
-            self.kitsu_pass_text = txt_KitsuHost.text()
+            self.kitsu_pass_text = txt_KitsuPass.text()
 
 
         window = QtWidgets.QDialog()
