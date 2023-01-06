@@ -520,8 +520,7 @@ class flameKitsuConnector(object):
 
         self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api')
         
-
-        def txt_tankName_textChanged():
+        def txt_KitsuHost_textChanged():
             pass
             # self.txt_tankName_text = txt_tankName.text()
             # storage_root_paths.setText(calculate_project_path())
@@ -552,7 +551,7 @@ class flameKitsuConnector(object):
         txt_KitsuHost.setMinimumSize(280, 28)
         txt_KitsuHost.move(128,0)
         txt_KitsuHost.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
-        txt_KitsuHost.textChanged.connect(txt_tankName_textChanged)
+        txt_KitsuHost.textChanged.connect(txt_KitsuHost_textChanged)
         # txt_tankName.setVisible(False)
 
         hbox1.addWidget(lbl_Host)
