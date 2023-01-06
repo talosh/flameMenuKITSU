@@ -544,7 +544,9 @@ class flameKitsuConnector(object):
             if not credentials:
                 break
             else:
-                pprint (credentials)
+                self.kitsu_host = credentials.get('host')
+                self.kitsu_user = credentials.get('user')
+                self.kitsu_pass = credentials.get('password')
                 login_status = login()
 
 
