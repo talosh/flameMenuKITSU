@@ -527,10 +527,10 @@ class flameKitsuConnector(object):
             # storage_root_paths.setText(calculate_project_path())
 
         def txt_KitsuUser_textChanged():
-            self.kitsu_host_text = txt_KitsuHost.text()
+            self.kitsu_user_text = txt_KitsuUser.text()
 
         def txt_KitsuPassword_textChanged():
-            self.kitsu_host_text = txt_KitsuHost.text()
+            self.kitsu_pass_text = txt_KitsuHost.text()
 
 
         window = QtWidgets.QDialog()
@@ -572,8 +572,14 @@ class flameKitsuConnector(object):
         lbl_User.setMaximumHeight(28)
         lbl_Host.setMinimumWidth(108)
         lbl_Host.setMinimumWidth(108)
-
         lbl_User.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+
+        txt_KitsuUser = QtWidgets.QLineEdit(self.kitsu_host, window)
+        txt_KitsuUser.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_KitsuUser.setMinimumSize(280, 28)
+        txt_KitsuUser.move(128,0)
+        txt_KitsuUser.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+        txt_KitsuUser.textChanged.connect(txt_KitsuUser_textChanged)
 
         hbox2.addWidget(lbl_User)
 
