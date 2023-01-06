@@ -529,8 +529,19 @@ class flameKitsuConnector(object):
         window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
 
         vbox1 = QtWidgets.QVBoxLayout()
+        hbox1 = QtWidgets.QHBoxLayout()
 
-        select_btn = QtWidgets.QPushButton('Select', window)
+        lbl_sgProjectFolder = QtWidgets.QLabel('Project Folder Name', window)
+        lbl_sgProjectFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_sgProjectFolder.setMinimumHeight(28)
+        lbl_sgProjectFolder.setMaximumHeight(28)
+        lbl_sgProjectFolder.setAlignment(QtCore.Qt.AlignCenter)
+        hbox1.addWidget(lbl_sgProjectFolder)
+
+
+        vbox1.addLayout(hbox1)
+
+        select_btn = QtWidgets.QPushButton('Login', window)
         select_btn.setFocusPolicy(QtCore.Qt.NoFocus)
         select_btn.setMinimumSize(100, 28)
         select_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
