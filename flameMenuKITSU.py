@@ -519,10 +519,19 @@ class flameKitsuConnector(object):
         from PySide2 import QtWidgets, QtCore
 
         self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api')
-        
+        self.kitsu_user = self.prefs_user.get('kitsu_user', 'username')
+        self.kitsu_pass = self.prefs_user.get('kitsu_pass', '')
+
         def txt_KitsuHost_textChanged():
             self.kitsu_host_text = txt_KitsuHost.text()
             # storage_root_paths.setText(calculate_project_path())
+
+        def txt_KitsuUser_textChanged():
+            self.kitsu_host_text = txt_KitsuHost.text()
+
+        def txt_KitsuPassword_textChanged():
+            self.kitsu_host_text = txt_KitsuHost.text()
+
 
         window = QtWidgets.QDialog()
         window.setMinimumSize(450, 180)
