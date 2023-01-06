@@ -682,7 +682,6 @@ class flameKitsuConnector(object):
             # cancel
             result = {}
 
-        pprint (result)
         return result
 
 
