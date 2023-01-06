@@ -549,10 +549,7 @@ class flameKitsuConnector(object):
 
         lbl_Host = QtWidgets.QLabel('KITSU Host: ', window)
         lbl_Host.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_Host.setMinimumHeight(28)
-        lbl_Host.setMaximumHeight(28)
-        lbl_Host.setMinimumWidth(108)
-        lbl_Host.setMaximumWidth(108)
+        lbl_Host.setFixedSize(108, 28)
         lbl_Host.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
         txt_KitsuHost = QtWidgets.QLineEdit(self.kitsu_host, window)
