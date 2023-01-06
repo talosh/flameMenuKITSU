@@ -538,8 +538,8 @@ class flameKitsuConnector(object):
 
         lbl_Host = QtWidgets.QLabel('KITSU Host: ', window)
         lbl_Host.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_Host.setMinimumHeight(80)
-        lbl_Host.setMaximumHeight(28)
+        lbl_Host.setMinimumHeight(28)
+        lbl_Host.setMaximumHeight(80)
         lbl_Host.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
         self.txt_tankName_text = 'test'
@@ -557,8 +557,8 @@ class flameKitsuConnector(object):
         hbox2 = QtWidgets.QHBoxLayout()
         lbl_User = QtWidgets.QLabel('User Name: ', window)
         lbl_User.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_User.setMinimumHeight(80)
-        lbl_User.setMaximumHeight(28)
+        lbl_User.setMinimumHeight(28)
+        lbl_User.setMaximumHeight(80)
         lbl_User.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
         hbox2.addWidget(lbl_User)
