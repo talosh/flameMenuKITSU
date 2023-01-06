@@ -414,6 +414,7 @@ class flameMenuApp(object):
 class flameKitsuConnector(object):
     def __init__(self, framework):
         self.name = self.__class__.__name__
+        self.app_name = app_name
         self.framework = framework
         self.connector = self
         self.log('waking up')
@@ -519,7 +520,7 @@ class flameKitsuConnector(object):
 
         window = QtWidgets.QDialog()
         window.setMinimumSize(450, 180)
-        window.setWindowTitle('Set Project Location')
+        window.setWindowTitle(self.app_name + ' - Login')
         window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
         window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         window.setStyleSheet('background-color: #313131')
