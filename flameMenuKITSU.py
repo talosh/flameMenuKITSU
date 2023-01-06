@@ -603,6 +603,9 @@ class flameKitsuConnector(object):
         vbox1.addLayout(hbox3)
 
         hbox_spacer = QtWidgets.QHBoxLayout()
+        lbl_spacer = QtWidgets.QLabel('', window)
+        lbl_spacer.setMinimumHeight(8)
+        hbox_spacer.addWidget(lbl_spacer)
         vbox1.addLayout(hbox_spacer)
 
         select_btn = QtWidgets.QPushButton('Login', window)
