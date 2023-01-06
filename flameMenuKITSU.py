@@ -516,7 +516,7 @@ class flameKitsuConnector(object):
 
     def get_user(self, *args, **kwargs):
         # get saved credentials
-        self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api')
+        self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api/')
         self.kitsu_user = self.prefs_user.get('kitsu_user', 'username')
         self.kitsu_pass = self.prefs_user.get('kitsu_pass', '')
 
@@ -524,11 +524,12 @@ class flameKitsuConnector(object):
             host = self.kitsu_host
             print (host)
             if not host.endswith('/api/'):
-                print ('why we are here?')
                 if self.kitsu_host.endswith('/'):
                     host = host + 'api/'
                 else:
                     host = host + '/api/'
+            elif host.endswith('/api'):
+                host = host + ('/')
 
             print (host)
 
@@ -542,10 +543,11 @@ class flameKitsuConnector(object):
 
         while not login():
             credentials = self.login_dialog()
-            if not credentials:
-                break
-            else:
-                pprint (credentials)
+            pprint (credentials)
+            # if not credentials:
+            #    break
+            #else:
+            #    pprint (credentials)
 
     def login_dialog(self):
         from PySide2 import QtWidgets, QtCore
