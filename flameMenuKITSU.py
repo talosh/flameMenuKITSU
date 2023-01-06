@@ -519,18 +519,31 @@ class flameKitsuConnector(object):
         self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api')
         self.kitsu_user = self.prefs_user.get('kitsu_user', 'username')
         self.kitsu_pass = self.prefs_user.get('kitsu_pass', '')
-        try:
-            print ('setting client')
-            self.gazu_client = self.gazu.client.create_client(self.kitsu_host)
-        except Exception as e:
-            pprint (e)
-        try:
-            print ('logging in')
-            self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = self.gazu_client)
-        except Exception as e:
-            pprint (e)
 
-        self.login_dialog()
+        def login():
+            host = self.kitsu_host
+            if not self.kitsu_host.endswith('/api/'):
+                if self.kitsu_host.endswith('/'):
+                    host = host + 'api/'
+                else:
+                    host = host + '/api/'
+
+            print (host)
+            
+            try:
+                self.gazu_client = self.gazu.client.create_client(host)
+                self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = self.gazu_client)
+                return True
+            except Exception as e:
+                pprint (e)
+                return False
+
+        while not login:
+            credentials = self.login_dialog()
+            if not credentials:
+                break
+            else:
+                pprint (credentials)
 
     def login_dialog(self):
         from PySide2 import QtWidgets, QtCore
@@ -648,10 +661,14 @@ class flameKitsuConnector(object):
 
         if window.exec_():
             # login
-            pass
+            return {
+                'host': self.kitsu_host_text,
+                'user': self.kitsu_user_text,
+                'password': self.kitsu_pass_text
+            }
         else:
             # cancel
-            pass
+            return {}
 
 
 # --- FLAME STARTUP SEQUENCE ---
