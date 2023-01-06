@@ -534,7 +534,7 @@ class flameKitsuConnector(object):
 
 
         window = QtWidgets.QDialog()
-        window.setMinimumSize(450, 180)
+        window.setFixedSize(450, 180)
         window.setWindowTitle(self.app_name + ' - Login')
         window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
         window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -567,10 +567,7 @@ class flameKitsuConnector(object):
 
         lbl_User = QtWidgets.QLabel('User Name: ', window)
         lbl_User.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_User.setMinimumHeight(28)
-        lbl_User.setMaximumHeight(28)
-        lbl_Host.setMinimumWidth(108)
-        lbl_Host.setMaximumWidth(108)
+        lbl_User.setFixedSize(108, 28)
         lbl_User.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
         txt_KitsuUser = QtWidgets.QLineEdit(self.kitsu_user, window)
