@@ -521,8 +521,7 @@ class flameKitsuConnector(object):
         self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api')
         
         def txt_KitsuHost_textChanged():
-            pass
-            # self.txt_tankName_text = txt_tankName.text()
+            self.kitsu_host_text = txt_KitsuHost.text()
             # storage_root_paths.setText(calculate_project_path())
 
         window = QtWidgets.QDialog()
