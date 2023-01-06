@@ -518,6 +518,10 @@ class flameKitsuConnector(object):
     def login_dialog(self):
         from PySide2 import QtWidgets, QtCore
 
+        def txt_tankName_textChanged():
+            self.txt_tankName_text = txt_tankName.text()
+            # storage_root_paths.setText(calculate_project_path())
+
         window = QtWidgets.QDialog()
         window.setMinimumSize(450, 180)
         window.setWindowTitle(self.app_name + ' - Login')
@@ -531,12 +535,24 @@ class flameKitsuConnector(object):
         vbox1 = QtWidgets.QVBoxLayout()
         hbox1 = QtWidgets.QHBoxLayout()
 
-        lbl_sgProjectFolder = QtWidgets.QLabel('Project Folder Name', window)
+        lbl_sgProjectFolder = QtWidgets.QLabel('Host', window)
         lbl_sgProjectFolder.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
         lbl_sgProjectFolder.setMinimumHeight(28)
         lbl_sgProjectFolder.setMaximumHeight(28)
-        lbl_sgProjectFolder.setAlignment(QtCore.Qt.AlignCenter)
+        lbl_sgProjectFolder.setAlignment(QtCore.Qt.AlignLeft)
+
+
         hbox1.addWidget(lbl_sgProjectFolder)
+
+        txt_tankName = QtWidgets.QLineEdit(self.txt_tankName_text, wgt_tankName)
+        txt_tankName.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_tankName.setMinimumSize(280, 28)
+        txt_tankName.move(128,0)
+        txt_tankName.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+        txt_tankName.textChanged.connect(txt_tankName_textChanged)
+        txt_tankName.setVisible(False)
+
+        hbox1.addWidget(txt_tankName)
 
 
         vbox1.addLayout(hbox1)
