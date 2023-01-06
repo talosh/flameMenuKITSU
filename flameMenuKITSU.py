@@ -634,7 +634,9 @@ class flameKitsuConnector(object):
         window.setLayout(vbox)
 
         if window.exec_():
-            pass
+            print ('exec')
+        else:
+            print ('else')
 
 
 # --- FLAME STARTUP SEQUENCE ---
