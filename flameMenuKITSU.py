@@ -699,6 +699,8 @@ def app_initialized(project_name):
     kitsuConnector = flameKitsuConnector(app_framework)
     load_apps(apps, app_framework, kitsuConnector)
 
+app_initialized.__dict__["WaitCursor"] = False
+
 try:
     import flame
     app_initialized(flame.project.current_project.name)
