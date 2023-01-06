@@ -518,6 +518,8 @@ class flameKitsuConnector(object):
     def login_dialog(self):
         from PySide2 import QtWidgets, QtCore
 
+        self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api')
+
         def txt_tankName_textChanged():
             pass
             # self.txt_tankName_text = txt_tankName.text()
@@ -544,23 +546,25 @@ class flameKitsuConnector(object):
         lbl_Host.setMinimumWidth(108)
         lbl_Host.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
-        self.txt_tankName_text = 'test'
-        txt_tankName = QtWidgets.QLineEdit(self.txt_tankName_text, window)
-        txt_tankName.setFocusPolicy(QtCore.Qt.ClickFocus)
-        txt_tankName.setMinimumSize(280, 28)
-        txt_tankName.move(128,0)
-        txt_tankName.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
-        txt_tankName.textChanged.connect(txt_tankName_textChanged)
+        txt_KitsuHost = QtWidgets.QLineEdit(self.kitsu_host, window)
+        txt_KitsuHost.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_KitsuHost.setMinimumSize(280, 28)
+        txt_KitsuHost.move(128,0)
+        txt_KitsuHost.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+        txt_KitsuHost.textChanged.connect(txt_tankName_textChanged)
         # txt_tankName.setVisible(False)
 
         hbox1.addWidget(lbl_Host)
-        hbox1.addWidget(txt_tankName)
+        hbox1.addWidget(txt_KitsuHost)
 
         hbox2 = QtWidgets.QHBoxLayout()
         lbl_User = QtWidgets.QLabel('User Name: ', window)
         lbl_User.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
         lbl_User.setMinimumHeight(28)
         lbl_User.setMaximumHeight(28)
+        lbl_Host.setMinimumWidth(108)
+        lbl_Host.setMinimumWidth(108)
+
         lbl_User.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
         hbox2.addWidget(lbl_User)
