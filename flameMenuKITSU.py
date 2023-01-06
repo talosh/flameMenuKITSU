@@ -587,14 +587,15 @@ class flameKitsuConnector(object):
         lbl_Pass.setFixedSize(108, 28)
         lbl_Pass.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
-        txt_KitsuPass = QtWidgets.QLineEdit(self.kitsu_user, window)
+        txt_KitsuPass = QtWidgets.QLineEdit(self.kitsu_pass, window)
         txt_KitsuPass.setFocusPolicy(QtCore.Qt.ClickFocus)
         txt_KitsuPass.setMinimumSize(280, 28)
         txt_KitsuPass.move(128,0)
         txt_KitsuPass.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+        txt_KitsuPass.setEchoMode(QtWidgets.QLineEdit.Password)
         txt_KitsuPass.textChanged.connect(txt_KitsuPass_textChanged)
 
-        hbox3.addWidget(lbl_User)
+        hbox3.addWidget(lbl_Pass)
         hbox3.addWidget(txt_KitsuPass)
 
         vbox1.addLayout(hbox1)
