@@ -539,19 +539,14 @@ class flameKitsuConnector(object):
             return False
 
         login_status = False
+        while not login_status:
+            credentials = self.login_dialog()
+            if not credentials:
+                break
+            else:
+                pprint (credentials)
+                login_status = login()
 
-        credentials = self.login_dialog()
-        pprint (credentials)
-
-
-        # while not login_status:
-        #    credentials = self.login_dialog()
-        #    pprint (credentials)
-        #    login_status = login()
-            # if not credentials:
-            #    break
-            #else:
-            #    pprint (credentials)
 
     def login_dialog(self):
         from PySide2 import QtWidgets, QtCore
