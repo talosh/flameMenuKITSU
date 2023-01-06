@@ -529,7 +529,7 @@ class flameKitsuConnector(object):
                     host = host + '/api/'
 
             print (host)
-            
+
             try:
                 self.gazu_client = self.gazu.client.create_client(host)
                 self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = self.gazu_client)
@@ -538,7 +538,7 @@ class flameKitsuConnector(object):
                 pprint (e)
                 return False
 
-        while not login:
+        while not login():
             credentials = self.login_dialog()
             if not credentials:
                 break
