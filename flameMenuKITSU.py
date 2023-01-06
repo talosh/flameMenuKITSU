@@ -536,14 +536,11 @@ class flameKitsuConnector(object):
         vbox1 = QtWidgets.QVBoxLayout()
         hbox1 = QtWidgets.QHBoxLayout()
 
-        lbl_Host = QtWidgets.QLabel('Host', window)
+        lbl_Host = QtWidgets.QLabel('KITSU Host: ', window)
         lbl_Host.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
         lbl_Host.setMinimumHeight(80)
         lbl_Host.setMaximumHeight(28)
         lbl_Host.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-
-
-        hbox1.addWidget(lbl_Host)
 
         self.txt_tankName_text = 'test'
         txt_tankName = QtWidgets.QLineEdit(self.txt_tankName_text, window)
@@ -554,10 +551,23 @@ class flameKitsuConnector(object):
         txt_tankName.textChanged.connect(txt_tankName_textChanged)
         # txt_tankName.setVisible(False)
 
+        hbox1.addWidget(lbl_Host)
         hbox1.addWidget(txt_tankName)
+
+        hbox2 = QtWidgets.QHBoxLayout()
+        lbl_User = QtWidgets.QLabel('User Name: ', window)
+        lbl_User.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_User.setMinimumHeight(80)
+        lbl_User.setMaximumHeight(28)
+        lbl_User.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+
+        hbox2.addWidget(lbl_User)
+
 
 
         vbox1.addLayout(hbox1)
+        vbox1.addLayout(hbox2)
+
 
         select_btn = QtWidgets.QPushButton('Login', window)
         select_btn.setFocusPolicy(QtCore.Qt.NoFocus)
@@ -573,14 +583,14 @@ class flameKitsuConnector(object):
                                 'QPushButton:pressed {font:italic; color: #d9d9d9}')
         cancel_btn.clicked.connect(window.reject)
 
-        hbox2 = QtWidgets.QHBoxLayout()
-        hbox2.addWidget(cancel_btn)
-        hbox2.addWidget(select_btn)
+        hbox4 = QtWidgets.QHBoxLayout()
+        hbox4.addWidget(cancel_btn)
+        hbox4.addWidget(select_btn)
 
         vbox = QtWidgets.QVBoxLayout()
         vbox.setMargin(20)
         vbox.addLayout(vbox1)
-        vbox.addLayout(hbox2)
+        vbox.addLayout(hbox4)
 
         window.setLayout(vbox)
 
