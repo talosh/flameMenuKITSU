@@ -544,6 +544,7 @@ class flameKitsuConnector(object):
         window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
 
         vbox1 = QtWidgets.QVBoxLayout()
+
         hbox1 = QtWidgets.QHBoxLayout()
 
         lbl_Host = QtWidgets.QLabel('KITSU Host: ', window)
@@ -551,7 +552,7 @@ class flameKitsuConnector(object):
         lbl_Host.setMinimumHeight(28)
         lbl_Host.setMaximumHeight(28)
         lbl_Host.setMinimumWidth(108)
-        lbl_Host.setMinimumWidth(108)
+        lbl_Host.setMaximumWidth(108)
         lbl_Host.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
         txt_KitsuHost = QtWidgets.QLineEdit(self.kitsu_host, window)
@@ -566,12 +567,13 @@ class flameKitsuConnector(object):
         hbox1.addWidget(txt_KitsuHost)
 
         hbox2 = QtWidgets.QHBoxLayout()
+
         lbl_User = QtWidgets.QLabel('User Name: ', window)
         lbl_User.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
         lbl_User.setMinimumHeight(28)
         lbl_User.setMaximumHeight(28)
         lbl_Host.setMinimumWidth(108)
-        lbl_Host.setMinimumWidth(108)
+        lbl_Host.setMaximumWidth(108)
         lbl_User.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
         txt_KitsuUser = QtWidgets.QLineEdit(self.kitsu_user, window)
