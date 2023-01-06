@@ -447,6 +447,8 @@ class flameKitsuConnector(object):
                 self.get_user()
             except Exception as e:
                 self.log_debug(pformat(e))
+
+        self.gazu_client = None
         
         '''
         if not 'tank_name_overrides' in self.prefs.keys():
@@ -518,10 +520,12 @@ class flameKitsuConnector(object):
         self.kitsu_user = self.prefs_user.get('kitsu_user', 'username')
         self.kitsu_pass = self.prefs_user.get('kitsu_pass', '')
         try:
-            gazu_client = self.gazu.client.create_client(self.kitsu_host)
+            print ('setting client')
+            self.gazu_client = self.gazu.client.create_client(self.kitsu_host)
         except Exception as e:
             pprint (e)
         try:
+            print ('logging in')
             self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = gazu_client)
         except Exception as e:
             pprint (e)
