@@ -19,7 +19,7 @@ __version__ = 'v0.0.1 dev 002'
 
 menu_group_name = 'Menu(KITSU)'
 app_name = 'flameMenuKITSU'
-DEBUG = False
+DEBUG = True
 
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
@@ -519,9 +519,10 @@ class flameKitsuConnector(object):
         self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api/')
         self.kitsu_user = self.prefs_user.get('kitsu_user', 'username')
         encoded_kitsu_pass = self.prefs_user.get('kitsu_pass', '')
+        pprint (self.kitsu_pass)
+
         if self.kitsu_pass:
             self.kitsu_pass = base64.b64decode(encoded_kitsu_pass).decode("utf-8")
-        pprint (self.kitsu_pass)
 
         def login():
             host = self.kitsu_host
@@ -714,6 +715,7 @@ kitsuConnector = None
 apps = []
 
 # Exception handler
+'''
 def exeption_handler(exctype, value, tb):
     from PySide2 import QtWidgets
     import traceback
@@ -726,6 +728,7 @@ def exeption_handler(exctype, value, tb):
     sys.__excepthook__(exctype, value, tb)
 
 sys.excepthook = exeption_handler
+'''
 
 # register clean up logic to be called at Flame exit
 def cleanup(apps, app_framework, kitsuConnector):
