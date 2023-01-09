@@ -2250,6 +2250,9 @@ def get_main_menu_custom_ui_actions():
     start = time.time()
     menu = []
     flameMenuProjectconnectApp = None
+    
+    pprint (apps)
+
     for app in apps:
         if app.__class__.__name__ == 'flameMenuProjectconnect':
             flameMenuProjectconnectApp = app
