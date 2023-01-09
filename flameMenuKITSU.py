@@ -521,6 +521,7 @@ class flameKitsuConnector(object):
         encoded_kitsu_pass = self.prefs_user.get('kitsu_pass', '')
         if self.kitsu_pass:
             self.kitsu_pass = base64.b64decode(encoded_kitsu_pass).decode("utf-8")
+        pprint (self.kitsu_pass)
 
         def login():
             host = self.kitsu_host
