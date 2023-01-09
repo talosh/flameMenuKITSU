@@ -456,64 +456,17 @@ class flameKitsuConnector(object):
         self.linked_project_id = None
 
         self.check_linked_project()
-        
-        '''
-        if not 'tank_name_overrides' in self.prefs.keys():
-            # tank_name_overrides are {'project_id': 'overrided_tank_name'}
-            self.prefs['tank_name_overrides'] = {}
-        
-        self.sg_user = None
-        self.sg_human_user = None
-        self.sg_user_name = None
-        self.sg = None
-        if not self.prefs_global.get('user signed out', False):
-            self.log_debug('requesting for Shotgun user')
-            try:
-                self.get_user()
-            except Exception as e:
-                self.log_debug(pformat(e))
-        
-        self.flame_project = None
-        self.sg_linked_project = None
-        self.sg_linked_project_id = None
-
-        self.async_cache = {}
-
-        self.async_cache_hash = hash(pformat(self.async_cache))
-
-        self.flame_workspace_state = self.prefs.get('wks_state')
-        if not self.flame_workspace_state:
-            self.flame_workspace_state = {}
-
-        self.check_sg_linked_project()
-        self.update_sg_storage_root()
-
-        # UID for all tasks in async cache
-
-        self.current_tasks_uid = None
-        self.current_versions_uid = None
-
-        # loop threads init. first arg in args is loop cycle time in seconds
 
         self.loops = []
         self.threads = True
-        self.loops.append(threading.Thread(target=self.cache_long_loop, args=(45, )))
         self.loops.append(threading.Thread(target=self.cache_short_loop, args=(4, )))
-        # self.loops.append(threading.Thread(target=self.flame_scan_loop))
-        
+
         for loop in self.loops:
             loop.daemon = True
             loop.start()
 
-        self.tk_engine = None
-        self.bootstrap_toolkit()
-
-        # register tasks query for async cache loop
-        self.register_common_queries()
-
         from PySide2 import QtWidgets
         self.mbox = QtWidgets.QMessageBox()
-'''
 
     def log(self, message):
         self.framework.log('[' + self.name + '] ' + message)
@@ -737,6 +690,69 @@ class flameKitsuConnector(object):
             else:
                 self.log_debug('no project id found for project name: %s' % flame.project.current_project.shotgun_project_name)
         return True
+
+    def cache_short_loop(self, timeout):
+        avg_delta = timeout / 2
+        recent_deltas = [avg_delta]*9
+        while self.threads:
+            start = time.time()                
+            
+            if not (self.user and self.linked_project_id):
+                time.sleep(1)
+                continue
+
+            shortloop_gazu_client = None
+            try:
+                host = self.kitsu_host
+                if not host.endswith('/api/'):
+                    if self.kitsu_host.endswith('/'):
+                        host = host + 'api/'
+                    else:
+                        host = host + '/api/'
+                elif host.endswith('/api'):
+                    host = host + ('/')
+                shortloop_gazu_client = self.gazu.client.create_client(host)
+                self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = shortloop_gazu_client)
+                # self.cache_update(shortloop_gazu_client)
+            except Exception as e:
+                self.log_debug('error soft updating cache in cache_short_loop: %s' % e)
+            
+            self.gazu.log_out(client = shortloop_gazu_client)
+
+            # self.preformat_common_queries()
+
+            delta = time.time() - start
+            self.log_debug('cache_short_loop took %s sec' % str(delta))
+
+            last_delta = recent_deltas[len(recent_deltas) - 1]
+            recent_deltas.pop(0)
+            
+            if abs(delta - last_delta) > last_delta*3:
+                delta = last_delta*3
+
+            recent_deltas.append(delta)
+            avg_delta = sum(recent_deltas)/float(len(recent_deltas))
+            if avg_delta > timeout/2:
+                self.loop_timeout(avg_delta*2, start)
+            else:
+                self.loop_timeout(timeout, start)
+
+    def terminate_loops(self):
+        self.threads = False
+        
+        for loop in self.loops:
+            loop.join()
+
+    def loop_timeout(self, timeout, start):
+        time_passed = int(time.time() - start)
+        if timeout <= time_passed:
+            return
+        else:
+            for n in range(int(timeout - time_passed) * 10):
+                if not self.threads:
+                    self.log_debug('leaving loop thread: %s' % inspect.currentframe().f_back.f_code.co_name)
+                    break
+                time.sleep(0.1)
 
 
 class flameMenuProjectconnect(flameMenuApp):
