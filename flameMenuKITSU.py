@@ -832,7 +832,7 @@ class flameMenuProjectconnect(flameMenuApp):
             pprint (projects_by_name.keys())
             pprint (sorted(projects_by_name.keys()))
 
-            for index, project_name in enumerate(sorted(projects_by_name.keys())):
+            for index, project_name in enumerate(sorted(projects_by_name.keys(), key=str.casefold)):
                 project = projects_by_name.get(project_name)
                 self.dynamic_menu_data[str(id(project))] = project
 
