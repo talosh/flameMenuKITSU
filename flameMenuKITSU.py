@@ -542,8 +542,7 @@ class flameKitsuConnector(object):
                 pprint (e)
             return False
 
-        login_status = login()
-        while not login_status:
+        while not login():
             credentials = self.login_dialog()
             if not credentials:
                 break
@@ -551,7 +550,6 @@ class flameKitsuConnector(object):
                 self.kitsu_host = credentials.get('host')
                 self.kitsu_user = credentials.get('user')
                 self.kitsu_pass = credentials.get('password', '')
-                login_status = login()
 
         pprint (self.gazu.client.get_current_user(client = self.gazu_client))
 
