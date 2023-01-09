@@ -749,19 +749,18 @@ class flameMenuProjectconnect(flameMenuApp):
         self.log('initializing')
 
         '''
-
         # register async cache query
         self.active_projects_uid = self.connector.cache_register({
                     'entity': 'Project',
                     'filters': [['archived', 'is', False], ['is_template', 'is', False]],
                     'fields': ['name', 'tank_name']
                     }, perform_query = True)
-
-        if self.connector.sg_linked_project and (not self.connector.sg_linked_project_id):
-            self.log_debug("project '%s' can not be found" % self.connector.sg_linked_project)
-            self.log_debug("unlinking project: '%s'" % self.connector.sg_linked_project)
-            self.unlink_project()
         '''
+
+        if self.connector.linked_project and (not self.connector.linked_project_id):
+            self.log_debug("project '%s' can not be found" % self.connector.linked_project)
+            self.log_debug("unlinking project: '%s'" % self.connector.linked_project)
+            self.unlink_project()
         
     def __getattr__(self, name):
         def method(*args, **kwargs):
@@ -865,13 +864,10 @@ class flameMenuProjectconnect(flameMenuApp):
         return self.connector.cache_retrive_result(self.active_projects_uid)
 
     def unlink_project(self, *args, **kwargs):
-        self.connector.destroy_toolkit_engine()
-        self.connector.unregister_common_queries()
         self.flame.project.current_project.shotgun_project_name = ''
-        self.connector.sg_linked_project = None
-        self.connector.sg_linked_project_id = None
+        self.connector.linked_project = None
+        self.connector.linked_project_id = None
         self.rescan()
-        self.connector.bootstrap_toolkit()
 
     def link_project(self, project):
         self.connector.destroy_toolkit_engine()
