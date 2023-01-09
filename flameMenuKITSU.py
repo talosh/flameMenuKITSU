@@ -556,7 +556,7 @@ class flameKitsuConnector(object):
                 self.kitsu_user = credentials.get('user')
                 self.kitsu_pass = credentials.get('password', '')
 
-        self.log_debug(self.user)
+        pprint(self.user)
 
         self.prefs_user['kitsu_host'] = self.kitsu_host
         self.prefs_user['kitsu_user'] = self.kitsu_user
