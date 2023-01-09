@@ -730,7 +730,7 @@ class flameKitsuConnector(object):
 
         if self.user:
             self.log_debug('updating project id')
-            project = self.project.get_project_by_name(self.linked_project)
+            project = self.gazu.project.get_project_by_name(self.linked_project)
             if project:
                 pprint (project)
                 self.linked_project_id = project.get('id')
