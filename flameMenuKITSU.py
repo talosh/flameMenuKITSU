@@ -708,7 +708,7 @@ class flameKitsuConnector(object):
 
         return result
 
-    def check_sg_linked_project(self, *args, **kwargs):
+    def check_linked_project(self, *args, **kwargs):
         try:
             import flame
         except:
