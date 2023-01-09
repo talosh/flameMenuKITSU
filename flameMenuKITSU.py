@@ -144,7 +144,6 @@ class flameAppFramework(object):
         if self.debug:
             print ('[DEBUG %s] %s' % (self.bundle_name, message))
 
-
     def load_prefs(self):
         import pickle
         
@@ -515,10 +514,13 @@ class flameKitsuConnector(object):
         self.framework.log_debug('[' + self.name + '] ' + message)
 
     def get_user(self, *args, **kwargs):
+        import base64
         # get saved credentials
         self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api/')
         self.kitsu_user = self.prefs_user.get('kitsu_user', 'username')
-        self.kitsu_pass = self.prefs_user.get('kitsu_pass', '')
+        encoded_kitsu_pass = self.prefs_user.get('kitsu_pass', '')
+        if self.kitsu_pass:
+            self.kitsu_pass = base64.b64decode(encoded_kitsu_pass).decode("utf-8")
 
         def login():
             host = self.kitsu_host
@@ -546,8 +548,13 @@ class flameKitsuConnector(object):
             else:
                 self.kitsu_host = credentials.get('host')
                 self.kitsu_user = credentials.get('user')
-                self.kitsu_pass = credentials.get('password')
+                self.kitsu_pass = credentials.get('password', '')
                 login_status = login()
+        
+        self.prefs_user['kitsu_host'] = self.kitsu_host
+        self.prefs_user['kitsu_user'] = self.kitsu_user
+        self.prefs_user['kitsu_pass'] = base64.b64encode(self.kitsu_pass.encode("utf-8"))
+        self.framework.save_prefs()
 
 
     def login_dialog(self):
