@@ -17,7 +17,7 @@ from pprint import pformat
 
 __version__ = 'v0.0.1 dev 002'
 
-menu_group_name = 'Menu(KITSU)'
+menu_group_name = 'KITSU'
 app_name = 'flameMenuKITSU'
 DEBUG = True
 
@@ -810,11 +810,11 @@ class flameMenuProjectconnect(flameMenuApp):
 
         else:
             # menu['name'] = self.menu_group_name + ': Link `' + flame_project_name + '` to Shotgun'
-            menu['name'] = self.menu_group_name + ': Link to ShotGrid'
+            menu['name'] = self.menu_group_name + ': Link to Project'
 
             menu_item = {}
             menu_item['order'] = 1
-            menu_item['name'] = '~ Rescan ShotGrid Projects'
+            menu_item['name'] = '~ Rescan Projects'
             menu_item['execute'] = self.rescan
             menu['actions'].append(menu_item)
 
