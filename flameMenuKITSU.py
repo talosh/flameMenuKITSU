@@ -442,6 +442,7 @@ class flameKitsuConnector(object):
         
 
         self.user = None
+        self.user_name = None
 
         if not self.prefs_global.get('user signed out', False):
             self.log_debug('requesting for user')
@@ -540,6 +541,7 @@ class flameKitsuConnector(object):
                 self.gazu_client = self.gazu.client.create_client(host)
                 self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = self.gazu_client)
                 self.user = self.gazu.client.get_current_user(client = self.gazu_client)
+                self.user_name = self.user.get('full_name')
                 return True
             except Exception as e:
                 pprint (e)
@@ -556,7 +558,8 @@ class flameKitsuConnector(object):
                 self.kitsu_user = credentials.get('user')
                 self.kitsu_pass = credentials.get('password', '')
 
-        pprint(self.user)
+        self.log_debug(pformat(self.user))
+        self.log_debug(self.user_name)
 
         self.prefs_user['kitsu_host'] = self.kitsu_host
         self.prefs_user['kitsu_user'] = self.kitsu_user
