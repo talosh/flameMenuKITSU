@@ -535,7 +535,6 @@ class flameKitsuConnector(object):
             try:
                 self.gazu_client = self.gazu.client.create_client(host)
                 self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = self.gazu_client)
-                pprint (self.gazu.get_current_user(client = self.gazu_client))
                 return True
             except Exception as e:
                 pprint (e)
@@ -551,7 +550,9 @@ class flameKitsuConnector(object):
                 self.kitsu_user = credentials.get('user')
                 self.kitsu_pass = credentials.get('password', '')
                 login_status = login()
-        
+
+        pprint (self.gazu.client.get_current_user(client = self.gazu_client))
+
         self.prefs_user['kitsu_host'] = self.kitsu_host
         self.prefs_user['kitsu_user'] = self.kitsu_user
         self.prefs_user['kitsu_pass'] = base64.b64encode(self.kitsu_pass.encode("utf-8"))
