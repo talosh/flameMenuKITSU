@@ -519,7 +519,7 @@ class flameKitsuConnector(object):
         self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api/')
         self.kitsu_user = self.prefs_user.get('kitsu_user', 'username')
         encoded_kitsu_pass = self.prefs_user.get('kitsu_pass', '')
-        pprint (self.kitsu_pass)
+        pprint (encoded_kitsu_pass)
 
         if self.kitsu_pass:
             self.kitsu_pass = base64.b64decode(encoded_kitsu_pass).decode("utf-8")
