@@ -518,7 +518,7 @@ class flameKitsuConnector(object):
         import base64
         self.gazu_client = None
         self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api/')
-        self.kitsu_user = self.prefs_user.get('kitsu_user', 'username')
+        self.kitsu_user = self.prefs_user.get('kitsu_user', 'user@host')
         self.kitsu_pass = ''
         encoded_kitsu_pass = self.prefs_user.get('kitsu_pass', '')
         if encoded_kitsu_pass:
