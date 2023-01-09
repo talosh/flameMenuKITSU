@@ -692,6 +692,9 @@ class flameKitsuConnector(object):
         return True
 
     def cache_short_loop(self, timeout):
+        
+        print ('hello from short loop')
+
         avg_delta = timeout / 2
         recent_deltas = [avg_delta]*9
         while self.threads:
