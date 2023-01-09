@@ -676,6 +676,14 @@ class flameKitsuConnector(object):
         vbox.addLayout(hbox4)
 
         window.setLayout(vbox)
+
+        QtWidgets.setTabOrder(
+            txt_KitsuHost,
+            txt_KitsuUser,
+            txt_KitsuPass,
+            cancel_btn,
+            select_btn
+            )
         
         if window.exec_():
             # login
