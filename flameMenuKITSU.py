@@ -774,11 +774,11 @@ class flameMenuProjectconnect(flameMenuApp):
             return []
 
         flame_project_name = self.flame.project.current_project.name
-        self.connector.sg_linked_project = self.flame.project.current_project.shotgun_project_name.get_value()
+        self.connector.linked_project = self.flame.project.current_project.shotgun_project_name.get_value()
 
         menu = {'actions': []}
 
-        if not self.connector.sg_user:
+        if not self.connector.user:
             menu['name'] = self.menu_group_name
 
             menu_item = {}
@@ -786,7 +786,7 @@ class flameMenuProjectconnect(flameMenuApp):
             menu_item['execute'] = self.sign_in
             menu['actions'].append(menu_item)
 
-        elif self.connector.sg_linked_project:
+        elif self.connector.linked_project:
             menu['name'] = self.menu_group_name
 
             menu_item = {}
@@ -797,7 +797,7 @@ class flameMenuProjectconnect(flameMenuApp):
             
             menu_item = {}
             menu_item['order'] = 2
-            menu_item['name'] = 'Sign Out: ' + str(self.connector.sg_user_name)
+            menu_item['name'] = 'Sign Out: ' + str(self.connector.user_name)
             menu_item['execute'] = self.sign_out
             menu['actions'].append(menu_item)
             
@@ -847,7 +847,7 @@ class flameMenuProjectconnect(flameMenuApp):
 
             menu_item = {}
             menu_item['order'] = index + 4
-            menu_item['name'] = 'Sign Out: ' + str(self.connector.sg_user_name)
+            menu_item['name'] = 'Sign Out: ' + str(self.connector.user_name)
             menu_item['execute'] = self.sign_out
             menu['actions'].append(menu_item)
 
@@ -861,7 +861,7 @@ class flameMenuProjectconnect(flameMenuApp):
         return menu
 
     def get_projects(self, *args, **kwargs):
-        return self.connector.cache_retrive_result(self.active_projects_uid)
+        return self.connector.gazu.project.all_open_projects(client = self.connector.gazu_client)
 
     def unlink_project(self, *args, **kwargs):
         self.flame.project.current_project.shotgun_project_name = ''
