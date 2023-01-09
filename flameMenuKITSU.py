@@ -439,6 +439,19 @@ class flameKitsuConnector(object):
         # defautl values are set here
         if not 'user signed out' in self.prefs_global.keys():
             self.prefs_global['user signed out'] = False
+        
+        import base64
+        self.gazu_client = None
+        self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api/')
+        self.kitsu_user = self.prefs_user.get('kitsu_user', 'username')
+        self.kitsu_pass = ''
+        encoded_kitsu_pass = self.prefs_user.get('kitsu_pass', '')
+        pprint (encoded_kitsu_pass)
+
+        if encoded_kitsu_pass:
+            self.kitsu_pass = base64.b64decode(encoded_kitsu_pass).decode("utf-8")
+
+        pprint (self.kitsu_pass)
 
         if not self.prefs_global.get('user signed out', False):
             self.log_debug('requesting for user')
@@ -447,7 +460,6 @@ class flameKitsuConnector(object):
             except Exception as e:
                 self.log_debug(pformat(e))
 
-        self.gazu_client = None
         
         '''
         if not 'tank_name_overrides' in self.prefs.keys():
@@ -514,15 +526,7 @@ class flameKitsuConnector(object):
         self.framework.log_debug('[' + self.name + '] ' + message)
 
     def get_user(self, *args, **kwargs):
-        import base64
         # get saved credentials
-        self.kitsu_host = self.prefs_user.get('kitsu_host', 'http://localhost/api/')
-        self.kitsu_user = self.prefs_user.get('kitsu_user', 'username')
-        encoded_kitsu_pass = self.prefs_user.get('kitsu_pass', '')
-        pprint (encoded_kitsu_pass)
-
-        if self.kitsu_pass:
-            self.kitsu_pass = base64.b64decode(encoded_kitsu_pass).decode("utf-8")
 
         def login():
             host = self.kitsu_host
