@@ -542,7 +542,7 @@ class flameKitsuConnector(object):
                 pprint (e)
             return False
 
-        login_status = False
+        login_status = login()
         while not login_status:
             credentials = self.login_dialog()
             if not credentials:
