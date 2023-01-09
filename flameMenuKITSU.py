@@ -451,6 +451,11 @@ class flameKitsuConnector(object):
             except Exception as e:
                 self.log_debug(pformat(e))
 
+        self.flame_project = None
+        self.linked_project = None
+        self.linked_project_id = None
+
+        self.check_linked_project()
         
         '''
         if not 'tank_name_overrides' in self.prefs.keys():
@@ -565,7 +570,6 @@ class flameKitsuConnector(object):
         self.prefs_user['kitsu_user'] = self.kitsu_user
         self.prefs_user['kitsu_pass'] = base64.b64encode(self.kitsu_pass.encode("utf-8"))
         self.framework.save_prefs()
-
 
     def login_dialog(self):
         from PySide2 import QtWidgets, QtCore
@@ -703,6 +707,36 @@ class flameKitsuConnector(object):
             result = {}
 
         return result
+
+    def check_sg_linked_project(self, *args, **kwargs):
+        try:
+            import flame
+        except:
+            self.log_debug('no flame module avaliable to import')
+            return False
+        try:
+            if self.flame_project != flame.project.current_project.name:
+                self.log_debug('updating flame project name: %s' % flame.project.current_project.name)
+                self.flame_project = flame.project.current_project.name
+        except:
+            return False
+
+        try:
+            if self.linked_project != flame.project.current_project.shotgun_project_name:
+                self.log_debug('updating linked project: %s' % flame.project.current_project.shotgun_project_name)
+                self.linked_project = flame.project.current_project.shotgun_project_name.get_value()
+        except:
+            return False
+
+        if self.user:
+            self.log_debug('updating project id')
+            project = self.project.get_project_by_name(self.linked_project)
+            if project:
+                pprint (project)
+                self.linked_project_id = project.get('id')
+            else:
+                self.log_debug('no project id found for project name: %s' % flame.project.current_project.shotgun_project_name)
+        return True
 
 
 class flameMenuProjectconnect(flameMenuApp):
