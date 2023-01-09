@@ -677,13 +677,11 @@ class flameKitsuConnector(object):
 
         window.setLayout(vbox)
 
-        window.setTabOrder(
-            txt_KitsuHost,
-            txt_KitsuUser,
-            txt_KitsuPass,
-            cancel_btn,
-            select_btn
-            )
+        window.setTabOrder(txt_KitsuHost, txt_KitsuUser)
+        window.setTabOrder(txt_KitsuUser, txt_KitsuPass)
+        window.setTabOrder(txt_KitsuPass, cancel_btn)
+        window.setTabOrder(cancel_btn, select_btn)
+        window.setTabOrder(select_btn, txt_KitsuHost)
         
         if window.exec_():
             # login
