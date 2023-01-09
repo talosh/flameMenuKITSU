@@ -441,6 +441,8 @@ class flameKitsuConnector(object):
             self.prefs_global['user signed out'] = False
         
 
+        self.user = None
+
         if not self.prefs_global.get('user signed out', False):
             self.log_debug('requesting for user')
             try:
@@ -537,6 +539,7 @@ class flameKitsuConnector(object):
             try:
                 self.gazu_client = self.gazu.client.create_client(host)
                 self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = self.gazu_client)
+                self.user = self.gazu.client.get_current_user(client = self.gazu_client)
                 return True
             except Exception as e:
                 pprint (e)
@@ -553,7 +556,7 @@ class flameKitsuConnector(object):
                 self.kitsu_user = credentials.get('user')
                 self.kitsu_pass = credentials.get('password', '')
 
-        pprint (self.gazu.client.get_current_user(client = self.gazu_client))
+        self.log_debug(self.user)
 
         self.prefs_user['kitsu_host'] = self.kitsu_host
         self.prefs_user['kitsu_user'] = self.kitsu_user
@@ -706,7 +709,7 @@ class flameMenuProjectconnect(flameMenuApp):
     def __init__(self, framework, connector):
         flameMenuApp.__init__(self, framework)
         self.connector = connector
-        pprint ('hello from flameMenuProjectconnect')
+        self.log('initializing')
 
         '''
 
