@@ -706,6 +706,9 @@ class flameMenuProjectconnect(flameMenuApp):
     def __init__(self, framework, connector):
         flameMenuApp.__init__(self, framework)
         self.connector = connector
+        pprint ('hello from flameMenuProjectconnect')
+
+        '''
 
         # register async cache query
         self.active_projects_uid = self.connector.cache_register({
@@ -718,6 +721,7 @@ class flameMenuProjectconnect(flameMenuApp):
             self.log_debug("project '%s' can not be found" % self.connector.sg_linked_project)
             self.log_debug("unlinking project: '%s'" % self.connector.sg_linked_project)
             self.unlink_project()
+        '''
         
     def __getattr__(self, name):
         def method(*args, **kwargs):
