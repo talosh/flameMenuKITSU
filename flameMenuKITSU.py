@@ -677,7 +677,7 @@ class flameKitsuConnector(object):
 
         window.setLayout(vbox)
 
-        QtWidgets.setTabOrder(
+        window.setTabOrder(
             txt_KitsuHost,
             txt_KitsuUser,
             txt_KitsuPass,
