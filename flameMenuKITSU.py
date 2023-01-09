@@ -535,6 +535,7 @@ class flameKitsuConnector(object):
             try:
                 self.gazu_client = self.gazu.client.create_client(host)
                 self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = self.gazu_client)
+                pprint (self.gazu.get_current_user(client = self.gazu_client))
                 return True
             except Exception as e:
                 pprint (e)
