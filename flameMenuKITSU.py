@@ -826,7 +826,7 @@ class flameMenuProjectconnect(flameMenuApp):
 
             menu_item = {}
             menu_item['order'] = 1
-            menu_item['name'] = 'Unlink from Kitsu project `' + self.connector.linked_project + '`'
+            menu_item['name'] = 'Unlink from `' + self.connector.linked_project + '`'
             menu_item['execute'] = self.unlink_project
             menu['actions'].append(menu_item)
             
