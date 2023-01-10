@@ -817,7 +817,7 @@ class flameMenuProjectconnect(flameMenuApp):
             menu['name'] = self.menu_group_name
 
             menu_item = {}
-            menu_item['name'] = 'Sign in to ShotGrid'
+            menu_item['name'] = 'Sign in to Kitsu'
             menu_item['execute'] = self.sign_in
             menu['actions'].append(menu_item)
 
@@ -826,7 +826,7 @@ class flameMenuProjectconnect(flameMenuApp):
 
             menu_item = {}
             menu_item['order'] = 1
-            menu_item['name'] = 'Unlink from ShotGrid project `' + self.connector.sg_linked_project + '`'
+            menu_item['name'] = 'Unlink from Kitsu project `' + self.connector.linked_project + '`'
             menu_item['execute'] = self.unlink_project
             menu['actions'].append(menu_item)
             
