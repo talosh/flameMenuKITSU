@@ -705,9 +705,6 @@ class flameKitsuConnector(object):
         return True
 
     def cache_short_loop(self, timeout):
-        
-        print ('hello from short loop')
-
         avg_delta = timeout / 2
         recent_deltas = [avg_delta]*9
         while self.threads:
@@ -775,7 +772,7 @@ class flameKitsuConnector(object):
 
     def scan_active_projects(self):
         if self.user:
-            self.pipeline_data['active_projects'] = self.connector.gazu.project.all_open_projects(client = self.gazu_client)
+            self.pipeline_data['active_projects'] = self.gazu.project.all_open_projects(client = self.gazu_client)
 
 class flameMenuProjectconnect(flameMenuApp):
 
@@ -899,8 +896,16 @@ class flameMenuProjectconnect(flameMenuApp):
         return menu
 
     def get_projects(self, *args, **kwargs):
-        return self.connector.pipeline_data.get('active_projects')
-
+        projects = self.connector.pipeline_data.get('active_projects')
+        if not projects:
+            try:
+                projects = self.conector.gazu.project.all_open_projects(client = self.connector.gazu_client)
+            except:
+                pass
+        if not isinstance(projects, dict):
+            projects = {}
+        return projects
+        
     def unlink_project(self, *args, **kwargs):
         self.flame.project.current_project.shotgun_project_name = ''
         self.connector.linked_project = None
