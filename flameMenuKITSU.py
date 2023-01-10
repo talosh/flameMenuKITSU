@@ -864,6 +864,7 @@ class flameMenuProjectconnect(flameMenuApp):
             for project in projects:
                 projects_by_name[project.get('name')] = project
 
+            index = 0
             for index, project_name in enumerate(sorted(projects_by_name.keys(), key=str.casefold)):
                 project = projects_by_name.get(project_name)
                 self.dynamic_menu_data[str(id(project))] = project
@@ -905,7 +906,7 @@ class flameMenuProjectconnect(flameMenuApp):
         if not isinstance(projects, dict):
             projects = {}
         return projects
-        
+
     def unlink_project(self, *args, **kwargs):
         self.flame.project.current_project.shotgun_project_name = ''
         self.connector.linked_project = None
