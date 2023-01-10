@@ -898,11 +898,15 @@ class flameMenuProjectconnect(flameMenuApp):
 
     def get_projects(self, *args, **kwargs):
         projects = self.connector.pipeline_data.get('active_projects')
+        
         if not projects:
             try:
                 projects = self.conector.gazu.project.all_open_projects(client = self.connector.gazu_client)
-            except:
-                pass
+            except Exception as e:
+                self.log(pformat(e))
+
+        pprint (projects)
+        
         if not isinstance(projects, dict):
             projects = {}
         return projects
