@@ -899,7 +899,7 @@ class flameMenuProjectconnect(flameMenuApp):
         return menu
 
     def get_projects(self, *args, **kwargs):
-        return self.connector.self.pipeline_data.get('active_projects')
+        return self.connector.pipeline_data.get('active_projects')
 
     def unlink_project(self, *args, **kwargs):
         self.flame.project.current_project.shotgun_project_name = ''
