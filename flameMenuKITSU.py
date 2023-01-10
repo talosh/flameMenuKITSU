@@ -525,6 +525,18 @@ class flameKitsuConnector(object):
         self.prefs_user['kitsu_pass'] = base64.b64encode(self.kitsu_pass.encode("utf-8"))
         self.framework.save_prefs()
 
+    def clear_user(self, *args, **kwargs):
+        try:
+            self.gazu.log_out(client = self.gazu_client)
+        except Exception as e:
+            self.log(pformat(e))
+
+        self.gazu_client = None
+        self.user = None
+        self.user_name = None
+        self.prefs_user['kitsu_pass'] = ''
+        self.framework.save_prefs()
+
     def login_dialog(self):
         from PySide2 import QtWidgets, QtCore
 
@@ -896,33 +908,30 @@ class flameMenuProjectconnect(flameMenuApp):
         self.rescan()
 
     def link_project(self, project):
-        self.connector.destroy_toolkit_engine()
         project_name = project.get('name')
         if project_name:
             self.flame.project.current_project.shotgun_project_name = project_name
-            self.connector.sg_linked_project = project_name
+            self.connector.linked_project = project_name
             if 'id' in project.keys():
-                self.connector.sg_linked_project_id = project.get('id')
+                self.connector.linked_project_id = project.get('id')
         self.rescan()
-        self.connector.register_common_queries()
-        self.connector.bootstrap_toolkit()
         
     def refresh(self, *args, **kwargs):        
         self.connector.cache_retrive_result(self.active_projects_uid, True)
         self.rescan()
 
     def sign_in(self, *args, **kwargs):
-        self.connector.destroy_toolkit_engine()
+        # self.connector.destroy_toolkit_engine()
         self.connector.prefs_global['user signed out'] = False
         self.connector.get_user()
         self.framework.save_prefs()
         self.rescan()
-        self.connector.register_common_queries()
-        self.connector.bootstrap_toolkit()
+        # self.connector.register_common_queries()
+        # self.connector.bootstrap_toolkit()
 
     def sign_out(self, *args, **kwargs):
-        self.connector.destroy_toolkit_engine()
-        self.connector.unregister_common_queries()
+        # self.connector.destroy_toolkit_engine()
+        # self.connector.unregister_common_queries()
         self.connector.prefs_global['user signed out'] = True
         self.connector.clear_user()
         self.framework.save_prefs()
