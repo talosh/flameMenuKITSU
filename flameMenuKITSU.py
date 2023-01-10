@@ -904,11 +904,9 @@ class flameMenuProjectconnect(flameMenuApp):
                 projects = self.connector.gazu.project.all_open_projects(client = self.connector.gazu_client)
             except Exception as e:
                 self.log(pformat(e))
-
-        pprint (projects)
         
-        if not isinstance(projects, dict):
-            projects = {}
+        if not isinstance(projects, list):
+            projects = [{}]
         return projects
 
     def unlink_project(self, *args, **kwargs):
