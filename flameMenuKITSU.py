@@ -454,6 +454,7 @@ class flameKitsuConnector(object):
         self.flame_project = None
         self.linked_project = None
         self.linked_project_id = None
+        self.pipeline_data = {}
 
         self.check_linked_project()
 
@@ -703,6 +704,9 @@ class flameKitsuConnector(object):
             if not (self.user and self.linked_project_id):
                 time.sleep(1)
                 continue
+            elif not self.linked_project_id:
+                self.scan_active_projects()
+                continue                
 
             shortloop_gazu_client = None
             try:
@@ -757,6 +761,9 @@ class flameKitsuConnector(object):
                     break
                 time.sleep(0.1)
 
+    def scan_active_projects(self):
+        if self.user:
+            self.pipeline_data['active_projects'] = self.connector.gazu.project.all_open_projects(client = self.gazu_client)
 
 class flameMenuProjectconnect(flameMenuApp):
 
@@ -880,7 +887,7 @@ class flameMenuProjectconnect(flameMenuApp):
         return menu
 
     def get_projects(self, *args, **kwargs):
-        return self.connector.gazu.project.all_open_projects(client = self.connector.gazu_client)
+        return self.connector.self.pipeline_data.get('active_projects')
 
     def unlink_project(self, *args, **kwargs):
         self.flame.project.current_project.shotgun_project_name = ''
