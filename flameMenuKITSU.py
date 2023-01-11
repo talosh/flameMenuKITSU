@@ -1523,7 +1523,8 @@ class flameMenuProjectconnect(flameMenuApp):
         btn_PublishedFileType8_menu.addAction('Movie', set_presetTypeMovie)
         btn_PublishedFileType8.setMenu(btn_PublishedFileType1_menu)
 
-        ''' # end of loader PublishedFileType settings
+        ''' 
+        # end of loader PublishedFileType settings
 
         # General::Create Default Task Template Label
 
@@ -1546,7 +1547,8 @@ class flameMenuProjectconnect(flameMenuApp):
         shot_task_template = flameMenuNewBatch_prefs.get('shot_task_template', {})
         code = shot_task_template.get('code', 'No code')
         btn_ShotTaskTemplate.setText(code)
-        # shot_task_templates = self.connector.sg.find('TaskTemplate', [['entity_type', 'is', 'Shot']], ['code'])
+        '''
+        shot_task_templates = self.connector.sg.find('TaskTemplate', [['entity_type', 'is', 'Shot']], ['code'])
         shot_task_templates = [{}]
         shot_task_templates_by_id = {x.get('id'):x for x in shot_task_templates}
         shot_task_templates_by_code_id = {x.get('code') + '_' + str(x.get('id')):x for x in shot_task_templates}
@@ -1570,6 +1572,7 @@ class flameMenuProjectconnect(flameMenuApp):
             x = lambda chk=False, template_id=template_id: selectShotTaskTemplate(template_id)
             action.triggered[()].connect(x)
         btn_ShotTaskTemplate.setMenu(btn_ShotTaskTemplate_menu)
+        '''
 
         # General::Create Asset Task Template Label
 
@@ -1584,8 +1587,8 @@ class flameMenuProjectconnect(flameMenuApp):
         shot_task_template = flameMenuNewBatch_prefs.get('asset_task_template', {})
         code = shot_task_template.get('code', 'No code')
         btn_AssetTaskTemplate.setText(code)
+        '''
         # asset_task_templates = self.connector.sg.find('TaskTemplate', [['entity_type', 'is', 'Asset']], ['code'])
-        asset_task_templates = [{}]
         asset_task_templates_by_id = {x.get('id'):x for x in asset_task_templates}
         asset_task_templates_by_code_id = {x.get('code') + '_' + str(x.get('id')):x for x in asset_task_templates}
         def selectAssetTaskTemplate(template_id):
@@ -1608,6 +1611,7 @@ class flameMenuProjectconnect(flameMenuApp):
             x = lambda chk=False, template_id=template_id: selectAssetTaskTemplate(template_id)
             action.triggered[()].connect(x)
         btn_AssetTaskTemplate.setMenu(btn_AssetTaskTemplate_menu)
+        '''
 
         # General::AutoRefresh button Label
 
