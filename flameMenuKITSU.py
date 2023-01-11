@@ -556,6 +556,7 @@ class flameKitsuConnector(object):
 
         while not login():
             credentials = self.login_dialog()
+            print ('coming from login dialog')
             if not credentials:
                 self.prefs_global['user signed out'] = True
                 self.kitsu_pass = ''
