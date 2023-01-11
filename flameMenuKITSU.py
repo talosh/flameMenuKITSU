@@ -551,7 +551,8 @@ class flameKitsuConnector(object):
                 self.user_name = self.user.get('full_name')
                 return True
             except Exception as e:
-                pprint (e)
+                self.mbox.setText(pformat(e))
+                self.mbox.exec_()
             return False
 
         while not login():
