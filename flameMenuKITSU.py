@@ -21,6 +21,54 @@ menu_group_name = 'KITSU'
 app_name = 'flameMenuKITSU'
 DEBUG = True
 
+
+default_templates = {
+# Resolved fields are:
+# {Sequence},{sg_asset_type},{Asset},{Shot},{Step},{Step_code},{name},{version},{version_four},{frame},{ext}
+# {name} and {version} (or {version_four}) are taken from the clip name or from Batch name and number of Batch itertations as a fallback.
+# EXAMPLE: There are 9 batch iterations in batch group.
+# Any of the clips named as "mycomp", "SHOT_001_mycomp", "SHOT_001_mycomp_009", "SHOT_001_mycomp_v009"
+# Would give us "mycomp" as a {name} and 009 as {version}
+# Version number padding are default to 3 at the moment, ### style padding is not yet implemented
+# Publishing into asset will just replace {Shot} fied with asset name
+'Shot': {
+    'flame_render': {
+        'default': 'sequences/{Sequence}/{Shot}/{Step}/publish/{Shot}_{name}_v{version}/{Shot}_{name}_v{version}.{frame}.{ext}',
+        'PublishedFileType': 'Flame Render'
+        },
+    'flame_batch': {
+        'default': 'sequences/{Sequence}/{Shot}/{Step}/publish/flame_batch/{Shot}_{name}_v{version}.batch',
+        'PublishedFileType': 'Flame Batch File'                  
+        },
+    'version_name': {
+        'default': '{Shot}_{name}_v{version}',
+    },
+    'fields': ['{Sequence}', '{Shot}', '{Step}', '{Step_code}', '{name}', '{version}', '{version_four}', '{frame}', '{ext}']
+},
+'Asset':{
+    'flame_render': {
+        'default': 'assets/{sg_asset_type}/{Asset}/{Step}/publish/{Asset}_{name}_v{version}/{Asset}_{name}_v{version}.{frame}.{ext}',
+        'PublishedFileType': 'Flame Render'
+        },
+    'flame_batch': {
+        'default': 'assets/{sg_asset_type}/{Asset}/{Step}/publish/flame_batch/{Asset}_{name}_v{version}.batch',
+        'PublishedFileType': 'Flame Batch File'                  
+        },
+    'version_name': {
+        'default': '{Asset}_{name}_v{version}',
+    },
+    'fields': ['{Sequence}', '{sg_asset_type}', '{Asset}', '{Step}', '{Step_code}', '{name}', '{version}', '{version_four}', '{frame}', '{ext}']
+}}
+
+default_flame_export_presets = {
+    # {0: flame.PresetVisibility.Project, 1: flame.PresetVisibility.Shared, 2: flame.PresetVisibility.Autodesk, 3: flame.PresetVisibility.Shotgun}
+    # {0: flame.PresetType.Image_Sequence, 1: flame.PresetType.Audio, 2: flame.PresetType.Movie, 3: flame.PresetType.Sequence_Publish}
+    'Publish': {'PresetVisibility': 2, 'PresetType': 0, 'PresetFile': 'OpenEXR/OpenEXR (16-bit fp PIZ).xml'},
+    'Preview': {'PresetVisibility': 3, 'PresetType': 2, 'PresetFile': 'Generate Preview.xml'},
+    'Thumbnail': {'PresetVisibility': 3, 'PresetType': 0, 'PresetFile': 'Generate Thumbnail.xml'}
+}
+
+
 class flameAppFramework(object):
     # flameAppFramework class takes care of preferences
 
@@ -716,9 +764,6 @@ class flameKitsuConnector(object):
             if not (self.user and self.linked_project_id):
                 time.sleep(1)
                 continue
-            elif not self.linked_project_id:
-                self.scan_active_projects()
-                continue                
 
             shortloop_gazu_client = None
             try:
@@ -731,11 +776,29 @@ class flameKitsuConnector(object):
                 elif host.endswith('/api'):
                     host = host + ('/')
                 shortloop_gazu_client = self.gazu.client.create_client(host)
-                self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = shortloop_gazu_client)
+                self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client=shortloop_gazu_client)
                 # self.cache_update(shortloop_gazu_client)
             except Exception as e:
                 self.log_debug('error soft updating cache in cache_short_loop: %s' % e)
-            
+
+            if not self.linked_project_id:
+                if self.user and shortloop_gazu_client:
+                    try:
+                        self.pipeline_data['active_projects'] = self.gazu.project.all_open_projects(client=shortloop_gazu_client)
+                        if not self.pipeline_data['active_projects']:
+                            self.pipeline_data['active_projects'] = [{}]
+                    except Exception as e:
+                        self.log(pformat(e))
+                continue
+
+            projects_by_id = {x.get('id'):x for x in self.pipeline_data['active_projects']}
+            current_project = projects_by_id.get(self.linked_project_id)
+
+            try:
+                self.pipeline_data['all_tasks_for_project'] = self.gazu.task.all_tasks_for_project(current_project, client=shortloop_gazu_client):
+            except Exception as e:
+                self.log(pformat(e))
+
             self.gazu.log_out(client = shortloop_gazu_client)
 
             # self.preformat_common_queries()
@@ -774,8 +837,6 @@ class flameKitsuConnector(object):
                 time.sleep(0.1)
 
     def scan_active_projects(self):
-        if self.user:
-            self.pipeline_data['active_projects'] = self.gazu.project.all_open_projects(client = self.gazu_client)
 
 class flameMenuProjectconnect(flameMenuApp):
 
