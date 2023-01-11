@@ -1546,7 +1546,8 @@ class flameMenuProjectconnect(flameMenuApp):
         shot_task_template = flameMenuNewBatch_prefs.get('shot_task_template', {})
         code = shot_task_template.get('code', 'No code')
         btn_ShotTaskTemplate.setText(code)
-        shot_task_templates = self.connector.sg.find('TaskTemplate', [['entity_type', 'is', 'Shot']], ['code'])
+        # shot_task_templates = self.connector.sg.find('TaskTemplate', [['entity_type', 'is', 'Shot']], ['code'])
+        shot_task_templates = [{}]
         shot_task_templates_by_id = {x.get('id'):x for x in shot_task_templates}
         shot_task_templates_by_code_id = {x.get('code') + '_' + str(x.get('id')):x for x in shot_task_templates}
         def selectShotTaskTemplate(template_id):
@@ -1583,7 +1584,8 @@ class flameMenuProjectconnect(flameMenuApp):
         shot_task_template = flameMenuNewBatch_prefs.get('asset_task_template', {})
         code = shot_task_template.get('code', 'No code')
         btn_AssetTaskTemplate.setText(code)
-        asset_task_templates = self.connector.sg.find('TaskTemplate', [['entity_type', 'is', 'Asset']], ['code'])
+        # asset_task_templates = self.connector.sg.find('TaskTemplate', [['entity_type', 'is', 'Asset']], ['code'])
+        asset_task_templates = [{}]
         asset_task_templates_by_id = {x.get('id'):x for x in asset_task_templates}
         asset_task_templates_by_code_id = {x.get('code') + '_' + str(x.get('id')):x for x in asset_task_templates}
         def selectAssetTaskTemplate(template_id):
@@ -1744,7 +1746,7 @@ class flameMenuProjectconnect(flameMenuApp):
         storage_root_paths.setFrameStyle(QtWidgets.QFrame.Box | QtWidgets.QFrame.Plain)
         storage_root_paths.setStyleSheet('QFrame {color: #9a9a9a; background-color: #2a2a2a; border: 1px solid #696969 }')
 
-        update_project_path_info()
+        # update_project_path_info()
 
         vbox_storage_root.addWidget(storage_root_paths)
         hbox_storage_root.addLayout(vbox_storage_root)
