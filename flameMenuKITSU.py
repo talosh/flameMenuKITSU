@@ -764,7 +764,7 @@ class flameKitsuConnector(object):
             
             pprint (self.user)
             pprint (self.linked_project_id)
-            pprint (self.user and self.linked_project_id)
+            pprint ((not self.user) and (not self.linked_project_id))
 
             if not (self.user and self.linked_project_id):
                 print ('short loop: no user and id')
