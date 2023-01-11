@@ -687,7 +687,7 @@ class flameKitsuConnector(object):
         select_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
                                 'QPushButton:pressed {font:italic; color: #d9d9d9}')
         select_btn.clicked.connect(window.accept)
-        select_btn.setAutoDefault(True)
+        select_btn.setDefault(True)
 
         cancel_btn = QtWidgets.QPushButton('Cancel', window)
         cancel_btn.setFocusPolicy(QtCore.Qt.StrongFocus)
@@ -695,6 +695,7 @@ class flameKitsuConnector(object):
         cancel_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
                                 'QPushButton:pressed {font:italic; color: #d9d9d9}')
         cancel_btn.clicked.connect(window.reject)
+        cancel_btn.setDefault(False)
 
         hbox4 = QtWidgets.QHBoxLayout()
         hbox4.addWidget(cancel_btn)
