@@ -795,7 +795,7 @@ class flameKitsuConnector(object):
             current_project = projects_by_id.get(self.linked_project_id)
 
             try:
-                self.pipeline_data['all_tasks_for_project'] = self.gazu.task.all_tasks_for_project(current_project, client=shortloop_gazu_client):
+                self.pipeline_data['all_tasks_for_project'] = self.gazu.task.all_tasks_for_project(current_project, client=shortloop_gazu_client)
             except Exception as e:
                 self.log(pformat(e))
 
