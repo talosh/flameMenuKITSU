@@ -790,7 +790,10 @@ class flameKitsuConnector(object):
                     except Exception as e:
                         self.log(pformat(e))
                 continue
-
+            
+            active_projects = self.pipeline_data.get('active_projects')
+            if not active_projects:
+                continue
             projects_by_id = {x.get('id'):x for x in self.pipeline_data['active_projects']}
             current_project = projects_by_id.get(self.linked_project_id)
 
@@ -999,7 +1002,7 @@ class flameMenuProjectconnect(flameMenuApp):
         self.rescan()
         
     def refresh(self, *args, **kwargs):        
-        self.connector.cache_retrive_result(self.active_projects_uid, True)
+        # self.connector.cache_retrive_result(self.active_projects_uid, True)
         self.rescan()
 
     def sign_in(self, *args, **kwargs):
@@ -2285,7 +2288,7 @@ class flameMenuProjectconnect(flameMenuApp):
             except:
                 self.flame = None
 
-        self.connector.cache_retrive_result(self.active_projects_uid, True)
+        # self.connector.cache_retrive_result(self.active_projects_uid, True)
 
         if self.flame:
             self.flame.execute_shortcut('Rescan Python Hooks')
