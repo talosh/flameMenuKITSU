@@ -534,7 +534,7 @@ class flameKitsuConnector(object):
         if encoded_kitsu_pass:
             self.kitsu_pass = base64.b64decode(encoded_kitsu_pass).decode("utf-8")
 
-        def login():
+        def login(msg=True):
             try:
                 host = self.kitsu_host                
                 if not host.endswith('/api/'):
@@ -551,11 +551,12 @@ class flameKitsuConnector(object):
                 self.user_name = self.user.get('full_name')
                 return True
             except Exception as e:
-                self.mbox.setText(pformat(e))
-                self.mbox.exec_()
+                if msg:
+                    self.mbox.setText(pformat(e))
+                    self.mbox.exec_()
             return False
 
-        login_status = False
+        login_status = login(msg=False)
         while not login_status:
             credentials = self.login_dialog()
             if not credentials:
