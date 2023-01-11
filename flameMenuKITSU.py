@@ -819,6 +819,8 @@ class flameKitsuConnector(object):
             else:
                 self.loop_timeout(timeout, start)
 
+            pprint (self.pipeline_data)
+
     def terminate_loops(self):
         self.threads = False
         
