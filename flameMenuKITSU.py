@@ -2601,7 +2601,7 @@ atexit.register(cleanup, apps, app_framework, kitsuConnector)
 def load_apps(apps, app_framework, kitsuConnector):
     try:
         apps.append(flameMenuProjectconnect(app_framework, kitsuConnector))
-        # apps.append(flameBatchBlessing(app_framework))
+        apps.append(flameBatchBlessing(app_framework))
         # apps.append(flameMenuNewBatch(app_framework, kitsuConnector))
         # apps.append(flameMenuBatchLoader(app_framework, kitsuConnector))
         # apps.append(flameMenuPublisher(app_framework, kitsuConnector))
