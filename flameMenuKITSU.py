@@ -763,6 +763,8 @@ class flameKitsuConnector(object):
             start = time.time()                
             
             pprint (self.user)
+            pprint (self.linked_project_id)
+            pprint (self.user and self.linked_project_id)
 
             if not (self.user and self.linked_project_id):
                 print ('short loop: no user and id')
