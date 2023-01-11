@@ -558,8 +558,6 @@ class flameKitsuConnector(object):
         login_status = False
         while not login_status:
             credentials = self.login_dialog()
-            login_status = login()
-
             if not credentials:
                 self.prefs_global['user signed out'] = True
                 self.kitsu_pass = ''
@@ -568,6 +566,7 @@ class flameKitsuConnector(object):
                 self.kitsu_host = credentials.get('host')
                 self.kitsu_user = credentials.get('user')
                 self.kitsu_pass = credentials.get('password', '')
+                login_status = login()
 
         # self.log_debug(pformat(self.user))
         self.log_debug(self.user_name)
