@@ -2678,6 +2678,8 @@ def get_main_menu_custom_ui_actions():
 
     return menu
 
+get_main_menu_custom_ui_actions.__dict__["waitCursor"] = False
+
 def get_media_panel_custom_ui_actions():
     
     def scope_desktop(selection):
