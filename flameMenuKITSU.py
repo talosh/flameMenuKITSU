@@ -335,7 +335,7 @@ class flameMenuApp(object):
         self.framework.log('[' + self.name + '] ' + message)
 
     def log_debug(self, message):
-        self.framework.log_debug('[' + self.name + '] ' + message)
+        self.framework.log_debug('[' + self.name + '] ' + str(message))
 
     def rescan(self, *args, **kwargs):
         if not self.flame:
@@ -521,7 +521,7 @@ class flameKitsuConnector(object):
         self.framework.log('[' + self.name + '] ' + message)
 
     def log_debug(self, message):
-        self.framework.log_debug('[' + self.name + '] ' + message)
+        self.framework.log_debug('[' + self.name + '] ' + str(message))
 
     def get_user(self, *args, **kwargs):
         # get saved credentials
