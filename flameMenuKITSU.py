@@ -1085,10 +1085,12 @@ class flameMenuProjectconnect(flameMenuApp):
             storage_root_paths.setText(compose_project_path_messge(tank_name))
 
         def update_pipeline_config_info():
-            if self.connector.get_pipeline_configurations():
-                pipeline_config_info.setText('Found')
-            else:
-                pipeline_config_info.setText('None')
+            pipeline_config_info.setText('None')
+
+            # if self.connector.get_pipeline_configurations():
+            #    pipeline_config_info.setText('Found')
+            #else:
+            #    pipeline_config_info.setText('None')
 
         def change_storage_root_dialog():
             self.connector.project_path_dialog()
