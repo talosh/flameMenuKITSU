@@ -2310,6 +2310,233 @@ class flameMenuProjectconnect(flameMenuApp):
             self.log_debug('Rescan Python Hooks')
 
 
+class flameBatchBlessing(flameMenuApp):
+    def __init__(self, framework):
+        flameMenuApp.__init__(self, framework)
+        
+        # app defaults
+        if not self.prefs.master.get(self.name):
+            self.prefs['flame_batch_root'] = '/var/tmp/flameMenuSG/flame_batch_setups'
+            self.prefs['enabled'] = True
+            self.prefs['use_project'] = True
+
+        self.root_folder = self.batch_setup_root_folder()
+
+    def batch_setup_root_folder(self):
+        try:
+            import flame
+        except:
+            return False
+        
+        flame_batch_name = 'unklnown_batch'
+        current_project_name = 'unknown_project'
+    
+        if flame.batch.name:
+            flame_batch_name = flame.batch.name.get_value()
+        if 'project' in dir(flame):
+            current_project_name = flame.project.current_project.name
+
+        if self.prefs.get('use_project'):
+            flame_batch_path = os.path.join(
+                                        self.prefs.get('flame_batch_root'),
+                                        current_project_name,
+                                        flame_batch_name)
+        else:
+            flame_batch_path = os.path.join(
+                                        self.prefs.get('flame_batch_root'),
+                                        flame_batch_name)
+        
+        if not os.path.isdir(flame_batch_path):
+            try:
+                os.makedirs(flame_batch_path)
+                self.log_debug('creating %s' % flame_batch_path)
+            except:
+                print ('PYTHON\t: %s can not create %s' % (self.framework.bundle_name, flame_batch_path))
+                return False
+        return flame_batch_path
+
+    def collect_clip_uids(self, render_dest):        
+        # collects clip uids from locations specified in render_dest dictionary
+        # returns:    dictionary of lists of clip uid's at the locations specified
+        #            in render_dest dictionary.
+        #            clip_uids = {
+        #                        'Batch Reels': {
+        #                            'BatchReel Name': [uid1, uid2]
+        #                            }
+        #                        'Batch Shelf Reels': {
+        #                            'Shelf Reel Name 1': [uid3, uid4]
+        #                            'Shelf Reel Name 2': [uid5, uid6, uid7]
+        #                            }
+        #                        'Libraries': {
+        #                            'Library Name 3': [uid8, uid9]
+        #                        }
+        #                        'Reel Groups': {
+        #                            'Reel Group Name 1': {
+        #                                'Reel 1': []
+        #                                'Reel 2: []
+        #                            }
+        #                            'Reel Group Name 2': {
+        #                                'Reel 1': []
+        #                                'Reel 2: []
+        #                            }
+        #
+        #                        }
+        #            }
+
+        import flame
+
+        collected_uids = dict()
+        for dest in render_dest.keys():
+            if dest == 'Batch Reels':
+                render_dest_names = list(render_dest.get(dest))
+                if not render_dest_names:
+                    continue
+                
+                batch_reels = dict()
+                for reel in flame.batch.reels:
+                    current_uids = list()
+                    if reel.name in render_dest_names:
+                        for clip in reel.clips:
+                            current_uids.append(clip.uid)
+                        batch_reels[reel.name] = current_uids
+                collected_uids['Batch Reels'] = batch_reels
+
+                batch_shelf_reels = dict()
+                for reel in flame.batch.shelf_reels:
+                    current_uids = list()
+                    if reel.name in render_dest_names:
+                        for clip in reel.clips:
+                            current_uids.append(clip.uid)
+                        batch_shelf_reels[reel.name] = current_uids
+                collected_uids['Batch Shelf Reels'] = batch_shelf_reels
+
+            elif dest == 'Libraries':
+                render_dest_names = list(render_dest.get(dest))
+                if not render_dest_names:
+                    continue
+
+                libraries = dict()
+                current_workspace_libraries = flame.project.current_project.current_workspace.libraries           
+                for library in current_workspace_libraries:
+                    current_uids = list()
+                    if library.name in render_dest_names:
+                        for clip in library.clips:
+                            current_uids.append(clip.uid)
+                        libraries[library.name] = current_uids
+                collected_uids['Libraries'] = libraries
+                            
+            elif dest == 'Reel Groups':
+                render_dest_names = list(render_dest.get(dest))
+                if not render_dest_names:
+                    continue
+                reel_groups = dict()
+                current_desktop_reel_groups = flame.project.current_project.current_workspace.desktop.reel_groups
+                for reel_group in current_desktop_reel_groups:
+                    reels = dict()
+                    if reel_group.name in render_dest_names:
+                        for reel in reel_group.reels:
+                            current_uids = list()
+                            for clip in reel.clips:
+                                current_uids.append(clip.uid)
+                            reels[reel.name] = current_uids
+                    reel_groups[reel_group.name] = reels
+                collected_uids['Reel Groups'] = reel_groups
+            
+        return collected_uids
+
+    def bless_clip(self, clip, **kwargs):
+        batch_setup_name = kwargs.get('batch_setup_name')
+        batch_setup_file = kwargs.get('batch_setup_file')
+        blessing_string = str({'batch_file': batch_setup_file})
+        for version in clip.versions:
+            for track in version.tracks:
+                for segment in track.segments:
+                    new_comment = segment.comment + blessing_string
+                    segment.comment = new_comment
+                    self.log_debug('blessing %s with %s' % (clip.name, blessing_string))
+        return True
+
+    def bless_batch_renders(self, userData):
+        import flame
+        
+        # finds clips that was not in the render destionations before
+        # and blesses them by adding batch_setup_name to the comments
+
+        batch_setup_name = userData.get('batch_setup_name')
+        batch_setup_file = userData.get('batch_setup_file')
+        render_dest_uids = userData.get('render_dest_uids')
+
+        for dest in render_dest_uids.keys():
+            previous_uids = None
+            if dest == 'Batch Reels':
+                batch_reels_dest = render_dest_uids.get(dest)
+                for batch_reel_name in batch_reels_dest.keys():
+                    previous_uids = batch_reels_dest.get(batch_reel_name)
+                    for reel in flame.batch.reels:
+                        if reel.name == batch_reel_name:
+                            for clip in reel.clips:
+                                if clip.uid not in previous_uids:
+                                    self.bless_clip(clip, 
+                                        batch_setup_name = batch_setup_name, 
+                                        batch_setup_file = batch_setup_file)
+
+            elif dest == 'Batch Shelf Reels':
+                batch_shelf_reels_dest = render_dest_uids.get(dest)
+                for batch_shelf_reel_name in batch_shelf_reels_dest.keys():
+                    previous_uids = batch_shelf_reels_dest.get(batch_shelf_reel_name)
+                    for reel in flame.batch.shelf_reels:
+                        if reel.name == batch_shelf_reel_name:
+                            for clip in reel.clips:
+                                if clip.uid not in previous_uids:
+                                    self.bless_clip(clip, 
+                                        batch_setup_name = batch_setup_name,
+                                        batch_setup_file = batch_setup_file)
+
+            elif dest == 'Libraries':
+                libraries_dest = render_dest_uids.get(dest)
+                current_workspace_libraries = flame.project.current_project.current_workspace.libraries
+                for library_name in libraries_dest.keys():
+                    previous_uids = libraries_dest.get(library_name)
+                    for library in current_workspace_libraries:
+                        if library.name == library_name:
+                            for clip in library.clips:
+                                if clip.uid not in previous_uids:
+                                    try:
+                                        self.bless_clip(clip, 
+                                            batch_setup_name = batch_setup_name,
+                                            batch_setup_file = batch_setup_file)
+                                    except:
+                                        print ('PYTHON\t: %s unable to bless %s' % (self.framework.bundle_name, clip.name))
+                                        print ('PYTHON\t: %s libraries are protected from editing' % self.framework.bundle_name)
+                                        continue
+
+            elif dest == 'Reel Groups':
+                reel_grous_dest = render_dest_uids.get(dest)
+                current_desktop_reel_groups = flame.project.current_project.current_workspace.desktop.reel_groups
+                for reel_group_name in reel_grous_dest.keys():
+                    for desktop_reel_group in current_desktop_reel_groups:
+                        if desktop_reel_group.name == reel_group_name:
+                            reels = reel_grous_dest[reel_group_name]
+                            for reel_name in reels.keys():
+                                previous_uids = reels.get(reel_name)
+                                for reel in desktop_reel_group.reels:
+                                    if reel.name == reel_name:
+                                        for clip in reel.clips:
+                                            if clip.uid not in previous_uids:
+                                                self.bless_clip(clip, 
+                                                    batch_setup_name = batch_setup_name,
+                                                    batch_setup_file = batch_setup_file)
+
+    def create_batch_uid(self):
+        # generates UUID for the batch setup
+        import uuid
+        from datetime import datetime
+        
+        uid = ((str(uuid.uuid1()).replace('-', '')).upper())
+        timestamp = (datetime.now()).strftime('%Y%b%d_%H%M').upper()
+        return timestamp + '_' + uid[:3]
+
+
 # --- FLAME STARTUP SEQUENCE ---
 # Flame startup sequence is a bit complicated
 # If the app installed in /opt/Autodesk/<user>/python
