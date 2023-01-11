@@ -558,7 +558,7 @@ class flameKitsuConnector(object):
             credentials = self.login_dialog()
             print ('coming from login dialog')
             pprint (credentials)
-            
+
             if not credentials:
                 self.prefs_global['user signed out'] = True
                 self.kitsu_pass = ''
@@ -765,11 +765,7 @@ class flameKitsuConnector(object):
         while self.threads:
             start = time.time()                
             
-            pprint (self.user)
-            pprint (self.linked_project_id)
-            pprint ((not self.user) and (not self.linked_project_id))
-
-            if not (self.user and self.linked_project_id):
+            if (not self.user) and (not self.linked_project_id):
                 print ('short loop: no user and id')
                 time.sleep(1)
                 continue
