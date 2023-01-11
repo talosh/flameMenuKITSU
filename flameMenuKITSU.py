@@ -756,12 +756,14 @@ class flameKitsuConnector(object):
         return True
 
     def cache_short_loop(self, timeout):
+        print ('short loop entry point')
         avg_delta = timeout / 2
         recent_deltas = [avg_delta]*9
         while self.threads:
             start = time.time()                
             
             if not (self.user and self.linked_project_id):
+                print ('short loop: no user and id')
                 time.sleep(1)
                 continue
 
@@ -781,19 +783,27 @@ class flameKitsuConnector(object):
             except Exception as e:
                 self.log_debug('error soft updating cache in cache_short_loop: %s' % e)
 
+            if self.user and shortloop_gazu_client:
+                try:
+                    self.pipeline_data['active_projects'] = self.gazu.project.all_open_projects(client=shortloop_gazu_client)
+                    if not self.pipeline_data['active_projects']:
+                        self.pipeline_data['active_projects'] = [{}]
+                except Exception as e:
+                    self.log(pformat(e))
+
             if not self.linked_project_id:
-                if self.user and shortloop_gazu_client:
-                    try:
-                        self.pipeline_data['active_projects'] = self.gazu.project.all_open_projects(client=shortloop_gazu_client)
-                        if not self.pipeline_data['active_projects']:
-                            self.pipeline_data['active_projects'] = [{}]
-                    except Exception as e:
-                        self.log(pformat(e))
+                print ('short loop: no id')
+                self.gazu.log_out(client = shortloop_gazu_client)
+                time.sleep(1)
                 continue
             
             active_projects = self.pipeline_data.get('active_projects')
             if not active_projects:
+                print ('no active_projects')
+                self.gazu.log_out(client = shortloop_gazu_client)
+                time.sleep(1)
                 continue
+
             projects_by_id = {x.get('id'):x for x in self.pipeline_data['active_projects']}
             current_project = projects_by_id.get(self.linked_project_id)
 
@@ -822,7 +832,7 @@ class flameKitsuConnector(object):
             else:
                 self.loop_timeout(timeout, start)
 
-            pprint (self.pipeline_data)
+            # pprint (self.pipeline_data)
 
     def terminate_loops(self):
         self.threads = False
