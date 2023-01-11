@@ -762,6 +762,8 @@ class flameKitsuConnector(object):
         while self.threads:
             start = time.time()                
             
+            pprint (self.user)
+
             if not (self.user and self.linked_project_id):
                 print ('short loop: no user and id')
                 time.sleep(1)
