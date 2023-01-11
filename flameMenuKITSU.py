@@ -660,6 +660,9 @@ class flameKitsuConnector(object):
         window.setTabOrder(txt_KitsuPass, cancel_btn)
         window.setTabOrder(cancel_btn, select_btn)
         window.setTabOrder(select_btn, txt_KitsuHost)
+
+        txt_KitsuUser.setFocus()
+        txt_KitsuHost.setFocus()
         
         if window.exec_():
             # login
@@ -954,7 +957,7 @@ class flameMenuProjectconnect(flameMenuApp):
         from PySide2 import QtWidgets, QtCore, QtGui
         
         # storage root section
-        self.connector.update_sg_storage_root()
+        # self.connector.update_sg_storage_root()
 
         def compose_project_path_messge(tank_name):
             self.connector.update_sg_storage_root()
