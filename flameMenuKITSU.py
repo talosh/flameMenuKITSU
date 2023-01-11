@@ -575,7 +575,7 @@ class flameKitsuConnector(object):
         lbl_Host.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
         txt_KitsuHost = QtWidgets.QLineEdit(self.kitsu_host, window)
-        txt_KitsuHost.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_KitsuHost.setFocusPolicy(QtCore.Qt.StrongFocus)
         txt_KitsuHost.setMinimumSize(280, 28)
         txt_KitsuHost.move(128,0)
         txt_KitsuHost.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
@@ -593,7 +593,7 @@ class flameKitsuConnector(object):
         lbl_User.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
         txt_KitsuUser = QtWidgets.QLineEdit(self.kitsu_user, window)
-        txt_KitsuUser.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_KitsuUser.setFocusPolicy(QtCore.Qt.StrongFocus)
         txt_KitsuUser.setMinimumSize(280, 28)
         txt_KitsuUser.move(128,0)
         txt_KitsuUser.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
@@ -610,7 +610,7 @@ class flameKitsuConnector(object):
         lbl_Pass.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
 
         txt_KitsuPass = QtWidgets.QLineEdit(self.kitsu_pass, window)
-        txt_KitsuPass.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_KitsuPass.setFocusPolicy(QtCore.Qt.StrongFocus)
         txt_KitsuPass.setMinimumSize(280, 28)
         txt_KitsuPass.move(128,0)
         txt_KitsuPass.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
@@ -631,14 +631,14 @@ class flameKitsuConnector(object):
         vbox1.addLayout(hbox_spacer)
 
         select_btn = QtWidgets.QPushButton('Login', window)
-        select_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        select_btn.setFocusPolicy(QtCore.Qt.StrongFocus)
         select_btn.setMinimumSize(100, 28)
         select_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
                                 'QPushButton:pressed {font:italic; color: #d9d9d9}')
         select_btn.clicked.connect(window.accept)
 
         cancel_btn = QtWidgets.QPushButton('Cancel', window)
-        cancel_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        cancel_btn.setFocusPolicy(QtCore.Qt.StrongFocus)
         cancel_btn.setMinimumSize(100, 28)
         cancel_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
                                 'QPushButton:pressed {font:italic; color: #d9d9d9}')
