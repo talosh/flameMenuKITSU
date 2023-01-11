@@ -555,10 +555,10 @@ class flameKitsuConnector(object):
                 self.mbox.exec_()
             return False
 
-        while not login():
+        login_status = False
+        while not login_status:
             credentials = self.login_dialog()
-            print ('coming from login dialog')
-            pprint (credentials)
+            login_status = login()
 
             if not credentials:
                 self.prefs_global['user signed out'] = True
