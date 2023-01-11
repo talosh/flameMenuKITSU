@@ -535,16 +535,16 @@ class flameKitsuConnector(object):
             self.kitsu_pass = base64.b64decode(encoded_kitsu_pass).decode("utf-8")
 
         def login():
-            host = self.kitsu_host
-            if not host.endswith('/api/'):
-                if self.kitsu_host.endswith('/'):
-                    host = host + 'api/'
-                else:
-                    host = host + '/api/'
-            elif host.endswith('/api'):
-                host = host + ('/')
-
             try:
+                host = self.kitsu_host                
+                if not host.endswith('/api/'):
+                    if self.kitsu_host.endswith('/'):
+                        host = host + 'api/'
+                    else:
+                        host = host + '/api/'
+                elif host.endswith('/api'):
+                    host = host + ('/')
+
                 self.gazu_client = self.gazu.client.create_client(host)
                 self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client = self.gazu_client)
                 self.user = self.gazu.client.get_current_user(client = self.gazu_client)
