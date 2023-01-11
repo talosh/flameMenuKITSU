@@ -839,6 +839,14 @@ class flameKitsuConnector(object):
                 time.sleep(0.1)
 
     def scan_active_projects(self):
+        if self.user:
+            try:
+                self.pipeline_data['active_projects'] = self.gazu.project.all_open_projects(client=self.gazu_client)
+                if not self.pipeline_data['active_projects']:
+                    self.pipeline_data['active_projects'] = [{}]
+            except Exception as e:
+                self.log(pformat(e))
+
 
 class flameMenuProjectconnect(flameMenuApp):
 
