@@ -863,8 +863,8 @@ class flameKitsuConnector(object):
         try:
             if not isinstance(self.pipeline_data.get('all_shots_for_project'), list):
                 self.pipeline_data['all_shots_for_project'] = []
-            self.pipeline_data['all_shots_for_project'] = self.gazu.shot.all_shots_for_project(current_project, client=current_client)
-            '''
+
+            amended_shots = []
             all_shots_for_project = self.gazu.shot.all_shots_for_project(current_project, client=current_client)
             for shot in all_shots_for_project:
                 shot['code'] = shot['name']
@@ -874,8 +874,9 @@ class flameKitsuConnector(object):
                         code = data.get(shot_code_field)
                         if code:
                             shot['code'] = code
-                self.pipeline_data['all_shots_for_project'].append(shot)
-            '''
+                amended_shots.append(shot)
+            self.pipeline_data['all_shots_for_project'] = amended_shots
+
         except Exception as e:
             self.log(pformat(e))
             self.pipeline_data['all_shots_for_project'] = []
