@@ -2735,8 +2735,8 @@ class flameMenuNewBatch(flameMenuApp):
             return {'Shot': shots, 'Asset': assets}
 
     def create_new_batch(self, entity):
-        sg = self.connector.sg
-
+        pprint (entity)
+        return
         # check if flame batch with entity name already in desktop
 
         entity = sg.find_one (
