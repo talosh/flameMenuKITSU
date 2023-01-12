@@ -836,7 +836,7 @@ class flameKitsuConnector(object):
     def collect_pipeline_data(self, current_project, current_client):
 
         try:
-            self.pipeline_data['all_tasks_for_project'] = self.gazu.task.all_tasks_for_project(current_project, client=current_client)
+            self.pipeline_data['all_tasks_for_person'] = self.gazu.task.all_tasks_for_person(self.user, client=current_client)
         except Exception as e:
             self.log(pformat(e))
 
