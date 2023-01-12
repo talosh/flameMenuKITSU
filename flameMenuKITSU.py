@@ -900,7 +900,6 @@ class flameMenuProjectconnect(flameMenuApp):
         if not self.flame:
             return []
 
-        flame_project_name = self.flame.project.current_project.name
         self.connector.linked_project = self.flame.project.current_project.shotgun_project_name.get_value()
 
         menu = {'actions': []}
@@ -2430,6 +2429,910 @@ class flameBatchBlessing(flameMenuApp):
         return timestamp + '_' + uid[:3]
 
 
+class flameMenuNewBatch(flameMenuApp):
+    def __init__(self, framework, connector):
+        # app configuration settings
+        self.steps_to_ignore = [
+            'step_one',
+            'step_two'
+        ]
+        self.types_to_include = [
+            'Image Sequence',
+            'Flame Render'
+        ]
+
+        # app constructor
+        flameMenuApp.__init__(self, framework)
+        self.connector = connector
+
+        if not self.prefs.master.get(self.name):
+            self.prefs['show_all'] = True
+            self.prefs['current_page'] = 0
+            self.prefs['menu_max_items_per_page'] = 128
+
+            self.prefs['last_sequence_used'] = {}
+
+    def __getattr__(self, name):
+        def method(*args, **kwargs):
+            entity = self.dynamic_menu_data.get(name)
+            if entity:
+                self.create_new_batch(entity)
+        return method
+
+    def build_menu(self):
+        '''
+        # ---------------------------------
+        # menu build time debug code
+
+        number_of_menu_itmes = 256
+        menu = {'name': self.name, 'actions': []}
+        for i in xrange(1, number_of_menu_itmes+1):
+            menu['actions'].append({
+                'name': 'Test selection ' + str(i),
+                # 'isVisible': self.scope_reel,
+                'execute': getattr(self, 'menu_item_' + str(i))
+            })
+        return menu
+
+        # ---------------------------------
+        # menu build time debug code
+        '''
+
+        if not self.connector.user:
+            return []
+        if not self.connector.linked_project_id:
+            return []
+        if not self.flame:
+            return []
+
+        batch_groups = []
+        for batch_group in self.flame.project.current_project.current_workspace.desktop.batch_groups:
+            batch_groups.append(batch_group.name.get_value())
+
+        menu = {'actions': []}
+        menu['name'] = self.menu_group_name + ' Create new batch:'
+        
+        menu_item = {}
+        menu_item['name'] = '~ Rescan'
+        menu_item['order'] = 1
+        menu_item['execute'] = self.rescan
+        menu['actions'].append(menu_item)
+
+        menu_item = {}
+        if self.prefs['show_all']:            
+            menu_item['name'] = '~ Show Assigned Only'
+        else:
+            menu_item['name'] = '~ Show All Avaliable'
+        menu_item['order'] = 2
+        menu_item['execute'] = self.flip_assigned
+        menu['actions'].append(menu_item)
+
+        # found entities menu
+
+        user_only = not self.prefs['show_all']
+        filter_out = ['Project', 'Sequence']
+        found_entities = self.get_entities(user_only, filter_out)
+        menu_main_body = []
+
+        if not found_entities:
+            menu_item = {}
+            menu_item['name'] = '- [ Assets ] [+]'
+            menu_item['execute'] = self.create_asset_dialog
+            menu_item['waitCursor'] = False
+            menu_main_body.append(menu_item)
+
+            menu_item = {}
+            menu_item['name'] = '- [ Shots ] [+]'
+            menu_item['execute'] = self.create_shot_dialog
+            menu_item['waitCursor'] = False
+            menu_main_body.append(menu_item)
+        
+        if len(found_entities.keys()) == 1:
+            if 'Shot' in found_entities.keys():
+                menu_item = {}
+                menu_item['name'] = '- [ Assets ] [+]'
+                menu_item['execute'] = self.create_asset_dialog
+                menu_item['waitCursor'] = False
+                menu_main_body.append(menu_item)
+
+        menu_ctrls_len = len(menu)
+        menu_lenght = menu_ctrls_len
+        menu_lenght += len(found_entities.keys())
+        for entity_type in found_entities.keys():
+            menu_lenght += len(found_entities.get(entity_type))
+        max_menu_lenght = self.prefs.get('menu_max_items_per_page')
+
+        for index, entity_type in enumerate(sorted(found_entities.keys())):
+
+            menu_item = {}
+            menu_item['name'] = '- [ ' + entity_type + 's ] [+]'
+            if entity_type == 'Asset':
+                menu_item['execute'] = self.create_asset_dialog
+            elif entity_type == 'Shot':
+                menu_item['execute'] = self.create_shot_dialog
+            else:
+                menu_item['execute'] = self.rescan
+            menu_item['waitCursor'] = False
+            menu_main_body.append(menu_item)
+                
+            entities_by_name = {}
+            for entity in found_entities[entity_type]:
+                entities_by_name[entity.get('name')] = entity
+            for entity_name in sorted(entities_by_name.keys()):
+                entity = entities_by_name.get(entity_name)
+                menu_item = {}
+                if entity.get('name') in batch_groups:
+                    menu_item['name'] = '  * ' + entity.get('name')
+                else:
+                    menu_item['name'] = '     ' + entity.get('name')
+
+                self.dynamic_menu_data[str(id(entity))] = entity
+                menu_item['execute'] = getattr(self, str(id(entity)))
+                menu_main_body.append(menu_item)
+
+        if len(found_entities.keys()) == 1:
+            if 'Asset' in found_entities.keys():
+                menu_item = {}
+                menu_item['name'] = '- [ Shots ] [+]'
+                menu_item['execute'] = self.create_shot_dialog
+                menu_item['waitCursor'] = False
+                menu_main_body.append(menu_item)
+
+        if menu_lenght < max_menu_lenght:
+        # controls and entites fits within menu size
+        # we do not need additional page switch controls
+            for menu_item in menu_main_body:
+                menu['actions'].append(menu_item)
+
+        else:
+            # round up number of pages and get current page
+            num_of_pages = ((menu_lenght) + max_menu_lenght - 1) // max_menu_lenght
+            curr_page = self.prefs.get('current_page')
+            
+            # decorate top with move backward control
+            # if we're not on the first page
+            if curr_page > 0:
+                menu_item = {}
+                menu_item['name'] = '<<[ prev page ' + str(curr_page) + ' of ' + str(num_of_pages) + ' ]'
+                menu_item['execute'] = self.page_bkw
+                menu['actions'].append(menu_item)
+
+            # calculate the start and end position of a window
+            # and append items to the list
+            menu_used_space = menu_ctrls_len + 2 # two more controls for page flip
+            window_size = max_menu_lenght - menu_used_space
+            start_index = window_size*curr_page + min(1*curr_page, 1)
+            end_index = window_size*curr_page+window_size + ((curr_page+1) // num_of_pages)
+
+            for menu_item in menu_main_body[start_index:end_index]:
+                menu['actions'].append(menu_item)
+            
+            # decorate bottom with move forward control
+            # if we're not on the last page            
+            if curr_page < (num_of_pages - 1):
+                menu_item = {}
+                menu_item['name'] = '[ next page ' + str(curr_page+2) + ' of ' + str(num_of_pages) + ' ]>>'
+                menu_item['execute'] = self.page_fwd
+                menu['actions'].append(menu_item)
+
+        # for action in menu['actions']:
+        #    action['isVisible'] = self.scope_desktop
+
+        return menu
+
+    def get_entities(self, user_only = True, filter_out=[]):
+        return {}
+
+        cached_tasks = self.connector.cache_retrive_result('current_tasks')
+
+        if not isinstance(cached_tasks, list):
+            
+            # try to unregister cache and register again
+
+            self.unregister_query()
+            self.register_query()
+
+            cached_tasks = self.connector.cache_retrive_result('current_tasks')
+
+            if not isinstance(cached_tasks, list):
+
+                # give up
+
+                return {}
+
+        if not cached_tasks:
+            return {}
+
+        tasks = []
+        if user_only:
+            for task in cached_tasks:
+                task_assignees = task.get('task_assignees')
+                for task_assignee in task_assignees:
+                    if task_assignee.get('id') == self.connector.sg_human_user.get('id'):
+                        tasks.append(task)
+        else:
+            tasks = list(cached_tasks)
+
+        entities = {}
+        for task in tasks:
+            if task['entity']:
+                task_entity_type = task['entity']['type']
+                if task_entity_type in filter_out:
+                    continue
+                task_entity_id = task['entity']['id']
+                if task_entity_type not in entities.keys():
+                    entities[task_entity_type] = {}
+                entities[task_entity_type][task_entity_id] = task['entity']
+
+        for entity_type in entities.keys():
+            entities[entity_type] = entities[entity_type].values()
+
+        return entities
+
+    def create_new_batch(self, entity):
+        sg = self.connector.sg
+
+        # check if flame batch with entity name already in desktop
+
+        entity = sg.find_one (
+            entity.get('type'),
+            [['id', 'is', entity.get('id')]],
+            ['code', 'sg_head_in', 'sg_tail_out', 'sg_vfx_requirements']
+        )
+
+        batch_groups = []
+        for batch_group in self.flame.project.current_project.current_workspace.desktop.batch_groups:
+            batch_groups.append(batch_group.name.get_value())
+
+        code = entity.get('code')
+        if not code:
+            code = 'New Batch'
+
+        if code in batch_groups:
+            return False
+
+        publishes = sg.find (
+            'PublishedFile',
+            [['entity', 'is', {'id': entity.get('id'), 'type': entity.get('type')}]],
+            [
+                'path_cache',
+                'path_cache_storage',
+                'name',
+                'version_number',
+                'published_file_type',
+                'version.Version.code',
+                'task.Task.step.Step.code',
+                'task.Task.step.Step.short_name'
+            ]
+        )
+
+        publishes_to_import = []
+        publishes_by_step = {}
+        for publish in publishes:
+            step_short_name = publish.get('task.Task.step.Step.short_name')
+            if step_short_name in self.steps_to_ignore:
+                continue
+            if step_short_name not in publishes_by_step.keys():
+                publishes_by_step[step_short_name] = []
+            published_file_type = publish.get('published_file_type')
+            if published_file_type:
+                published_file_type_name = published_file_type.get('name')
+            if published_file_type_name in self.types_to_include:
+                publishes_by_step[step_short_name].append(publish)
+        
+
+        for step in publishes_by_step.keys():
+            step_group = publishes_by_step.get(step)
+            names_group = dict()
+            
+            for publish in step_group:
+                name = publish.get('name')
+                if name not in names_group.keys():
+                    names_group[name] = []
+                names_group[name].append(publish)
+            
+            for name in names_group.keys():
+                version_numbers = []
+                for publish in names_group[name]:
+                    version_number = publish.get('version_number')
+                    version_numbers.append(version_number)
+                max_version = max(version_numbers)
+                for publish in names_group[name]:
+                    version_number = publish.get('version_number')
+                    if version_number == max_version:
+                        publishes_to_import.append(publish)
+        
+        flame_paths_to_import = []
+        for publish in publishes_to_import:
+            path_cache = publish.get('path_cache')
+            if not path_cache:
+                continue            
+            storage_root = self.connector.resolve_storage_root(publish.get('path_cache_storage'))
+            if not storage_root:
+                continue
+            path = os.path.join(storage_root, path_cache)
+            flame_path = self.build_flame_friendly_path(path)
+            flame_paths_to_import.append(flame_path)
+        
+        sg_head_in = entity.get('sg_head_in')
+        if not sg_head_in:
+            sg_head_in = 1001
+        
+        sg_tail_out = entity.get('sg_tail_out')
+        if not sg_tail_out:
+            sg_tail_out = 1100
+
+        sg_vfx_req = entity.get('sg_vfx_requirements')
+        if not sg_vfx_req:
+            sg_vfx_req = 'no requirements specified'
+
+        dur = (sg_tail_out - sg_head_in) + 1
+
+        self.flame.batch.create_batch_group (
+            code, start_frame = 1, duration = dur
+        )
+        
+        for flame_path in flame_paths_to_import:
+            self.flame.batch.import_clip(flame_path, 'Schematic Reel 1')
+
+        render_node = self.flame.batch.create_node('Render')
+        render_node.name.set_value('<batch name>_comp_v<iteration###>')
+
+        self.flame.batch.organize()
+
+    def create_asset_dialog(self, *args, **kwargs):
+        from PySide2 import QtWidgets, QtCore
+
+        self.asset_name = ''
+        flameMenuNewBatch_prefs = self.framework.prefs.get('flameMenuNewBatch', {})
+        self.asset_task_template =  flameMenuNewBatch_prefs.get('asset_task_template', {})
+
+        window = QtWidgets.QDialog()
+        window.setMinimumSize(280, 180)
+        window.setWindowTitle('Create Asset in ShotGrid')
+        window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
+        window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        window.setStyleSheet('background-color: #313131')
+
+        screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
+
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.setAlignment(QtCore.Qt.AlignTop)
+
+        # Asset Task Template label
+
+        lbl_TaskTemplate = QtWidgets.QLabel('Task Template', window)
+        lbl_TaskTemplate.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_TaskTemplate.setMinimumHeight(28)
+        lbl_TaskTemplate.setMaximumHeight(28)
+        lbl_TaskTemplate.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_TaskTemplate)
+
+        # Shot Task Template Menu
+
+        btn_AssetTaskTemplate = QtWidgets.QPushButton(window)
+        flameMenuNewBatch_prefs = self.framework.prefs.get('flameMenuNewBatch', {})
+        asset_task_template = flameMenuNewBatch_prefs.get('asset_task_template', {})
+        code = asset_task_template.get('code', 'No code')
+        btn_AssetTaskTemplate.setText(code)
+        asset_task_templates = self.connector.sg.find('TaskTemplate', [['entity_type', 'is', 'Asset']], ['code'])
+        asset_task_templates_by_id = {x.get('id'):x for x in asset_task_templates}
+        asset_task_templates_by_code_id = {x.get('code') + '_' + str(x.get('id')):x for x in asset_task_templates}
+        def selectAssetTaskTemplate(template_id):
+            template = shot_task_templates_by_id.get(template_id, {})
+            code = template.get('code', 'no_code')
+            btn_AssetTaskTemplate.setText(code)
+            self.asset_task_template = template
+        btn_AssetTaskTemplate.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_AssetTaskTemplate.setMinimumSize(258, 28)
+        btn_AssetTaskTemplate.move(40, 102)
+        btn_AssetTaskTemplate.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+        btn_AssetTaskTemplate_menu = QtWidgets.QMenu()
+        for code_id in sorted(asset_task_templates_by_code_id.keys()):
+            template = asset_task_templates_by_code_id.get(code_id, {})
+            code = template.get('code', 'no_code')
+            template_id = template.get('id')
+            action = btn_AssetTaskTemplate_menu.addAction(code)
+            x = lambda chk=False, template_id=template_id: selectAssetTaskTemplate(template_id)
+            action.triggered[()].connect(x)
+        btn_AssetTaskTemplate.setMenu(btn_AssetTaskTemplate_menu)
+        vbox.addWidget(btn_AssetTaskTemplate)
+
+        # Shot Name Label
+
+        lbl_AssettName = QtWidgets.QLabel('New Asset Name', window)
+        lbl_AssettName.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_AssettName.setMinimumHeight(28)
+        lbl_AssettName.setMaximumHeight(28)
+        lbl_AssettName.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_AssettName)
+
+        # Shot Name Text Field
+        def txt_AssetName_textChanged():
+            self.asset_name = txt_AssetName.text()
+        txt_AssetName = QtWidgets.QLineEdit('', window)
+        txt_AssetName.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_AssetName.setMinimumSize(280, 28)
+        txt_AssetName.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+        txt_AssetName.textChanged.connect(txt_AssetName_textChanged)
+        vbox.addWidget(txt_AssetName)
+
+        # Spacer Label
+
+        lbl_Spacer = QtWidgets.QLabel('', window)
+        lbl_Spacer.setStyleSheet('QFrame {color: #989898; background-color: #313131}')
+        lbl_Spacer.setMinimumHeight(4)
+        lbl_Spacer.setMaximumHeight(4)
+        lbl_Spacer.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_Spacer)
+
+        # Create and Cancel Buttons
+        hbox_Create = QtWidgets.QHBoxLayout()
+
+        select_btn = QtWidgets.QPushButton('Create', window)
+        select_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        select_btn.setMinimumSize(128, 28)
+        select_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        select_btn.clicked.connect(window.accept)
+
+        cancel_btn = QtWidgets.QPushButton('Cancel', window)
+        cancel_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        cancel_btn.setMinimumSize(128, 28)
+        cancel_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        cancel_btn.clicked.connect(window.reject)
+
+        hbox_Create.addWidget(cancel_btn)
+        hbox_Create.addWidget(select_btn)
+
+        vbox.addLayout(hbox_Create)
+
+        window.setLayout(vbox)
+        if window.exec_():
+            if self.asset_name == '':
+                return {}
+            else:
+                data = {'project': {'type': 'Project','id': self.connector.sg_linked_project_id},
+                'code': self.asset_name,
+                'task_template': self.asset_task_template}
+                self.log_debug('creating new asset...')
+                new_asset = self.connector.sg.create('Asset', data)
+                self.log_debug('new asset:\n%s' % pformat(new_asset))
+                self.log_debug('updating async cache for cuttent_tasks')
+                self.connector.cache_retrive_result('current_tasks', True)
+                self.log_debug('creating new batch')
+                self.create_new_batch(new_asset)
+
+                for app in self.framework.apps:
+                    app.rescan()
+
+                return new_asset
+        else:
+            return {}
+
+    def create_shot_dialog(self, *args, **kwargs):
+        from PySide2 import QtWidgets, QtCore
+
+        self.sequence_name = ''
+        self.sequence_id = -1
+        flameMenuNewBatch_prefs = self.framework.prefs.get('flameMenuNewBatch', {})
+        self.shot_task_template =  flameMenuNewBatch_prefs.get('shot_task_template', {})
+        self.shot_name = ''
+
+        def newSequenceDialog():
+            window_NewSequnece = QtWidgets.QDialog()
+            window_NewSequnece.setMinimumSize(280, 100)
+            window_NewSequnece.setWindowTitle('Create New Sequence in ShotGrid')
+            window_NewSequnece.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
+            window_NewSequnece.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+            window_NewSequnece.setStyleSheet('background-color: #313131')
+
+            screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+            window_NewSequnece.move((screen_res.width()/2)-150, (screen_res.height() / 2)-280)
+
+            vbox_NewSequnece = QtWidgets.QVBoxLayout()
+            vbox_NewSequnece.setAlignment(QtCore.Qt.AlignTop)
+
+            # Shot Name Label
+
+            lbl_SequenceName = QtWidgets.QLabel('New Sequence Name', window_NewSequnece)
+            lbl_SequenceName.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+            lbl_SequenceName.setMinimumHeight(28)
+            lbl_SequenceName.setMaximumHeight(28)
+            lbl_SequenceName.setAlignment(QtCore.Qt.AlignCenter)
+            vbox_NewSequnece.addWidget(lbl_SequenceName)
+
+            # Sequence Name Text Field
+            def txt_NewSequenceName_textChanged():
+                self.sequence_name = txt_NewSequenceName.text()
+            txt_NewSequenceName = QtWidgets.QLineEdit('', window_NewSequnece)
+            txt_NewSequenceName.setFocusPolicy(QtCore.Qt.ClickFocus)
+            txt_NewSequenceName.setMinimumSize(280, 28)
+            txt_NewSequenceName.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+            txt_NewSequenceName.textChanged.connect(txt_NewSequenceName_textChanged)
+            vbox_NewSequnece.addWidget(txt_NewSequenceName)
+
+            # Create and Cancel Buttons
+            hbox_NewSequneceCreate = QtWidgets.QHBoxLayout()
+
+            btn_NewSequenceCreate = QtWidgets.QPushButton('Create', window_NewSequnece)
+            btn_NewSequenceCreate.setFocusPolicy(QtCore.Qt.NoFocus)
+            btn_NewSequenceCreate.setMinimumSize(128, 28)
+            btn_NewSequenceCreate.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}')
+            btn_NewSequenceCreate.clicked.connect(window_NewSequnece.accept)
+
+            btn_NewSequenceCancel = QtWidgets.QPushButton('Cancel', window_NewSequnece)
+            btn_NewSequenceCancel.setFocusPolicy(QtCore.Qt.NoFocus)
+            btn_NewSequenceCancel.setMinimumSize(128, 28)
+            btn_NewSequenceCancel.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}')
+            btn_NewSequenceCancel.clicked.connect(window_NewSequnece.reject)
+
+            hbox_NewSequneceCreate.addWidget(btn_NewSequenceCancel)
+            hbox_NewSequneceCreate.addWidget(btn_NewSequenceCreate)
+
+            vbox_NewSequnece.addLayout(hbox_NewSequneceCreate)
+
+            window_NewSequnece.setLayout(vbox_NewSequnece)
+
+            if window_NewSequnece.exec_():
+                if self.sequence_name == '':
+                    return {}
+                else:
+                    data = {'project': {'type': 'Project','id': self.connector.sg_linked_project_id},
+                    'code': self.sequence_name}
+                    return self.connector.sg.create('Sequence', data)
+            else:
+                return {}
+
+        window = QtWidgets.QDialog()
+        window.setMinimumSize(280, 180)
+        window.setWindowTitle('Create Shot in ShotGrid')
+        window.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowStaysOnTopHint)
+        window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        window.setStyleSheet('background-color: #313131')
+
+        screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
+
+        vbox = QtWidgets.QVBoxLayout()
+        vbox.setAlignment(QtCore.Qt.AlignTop)
+
+        # Sequence label
+
+        lbl_Sequence = QtWidgets.QLabel('Sequence', window)
+        lbl_Sequence.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_Sequence.setMinimumHeight(28)
+        lbl_Sequence.setMaximumHeight(28)
+        lbl_Sequence.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_Sequence)
+
+        # Sequence Selector and New Sequence Button Hbox
+
+        # hbox_Sequence = QtWidgets.QHBoxLayout()
+        # hbox_Sequence.setAlignment(QtCore.Qt.AlignLeft)
+
+        # Sequence Selector Button
+
+        btn_Sequence = QtWidgets.QPushButton(window)
+        self.sequences = self.connector.sg.find('Sequence', 
+            [['project', 'is', {'type': 'Project', 'id': self.connector.sg_linked_project_id}]], 
+            ['code'])
+        if self.prefs.get('last_sequence_used'):
+            sequence = self.prefs.get('last_sequence_used', {})
+            code = sequence.get('code', 'No Name')
+            self.sequence_id = sequence.get('id', -1)
+        else:
+            code = 'DefaultSequence'
+        btn_Sequence.setText(code)
+        self.sequences_by_id = {x.get('id'):x for x in self.sequences}
+        self.sequences_by_code_id = {x.get('code') + '_' + str(x.get('id')):x for x in self.sequences}
+        def selectSequence(sequence_id):
+            
+            if sequence_id == 0:
+                new_sequence = newSequenceDialog()
+                if new_sequence:
+                    btn_Sequence_menu.clear()
+                    self.sequences = self.connector.sg.find('Sequence', 
+                    [['project', 'is', {'type': 'Project', 'id': self.connector.sg_linked_project_id}]], 
+                    ['code'])
+                    self.sequences_by_id = {x.get('id'):x for x in self.sequences}
+                    self.sequences_by_code_id = {x.get('code') + '_' + str(x.get('id')):x for x in self.sequences}
+                    action = btn_Sequence_menu.addAction('DefaultSequence')
+                    x = lambda chk=False, sequence_id=-1: selectSequence(sequence_id)
+                    action.triggered[()].connect(x)
+                    for code_id in sorted(self.sequences_by_code_id.keys()):
+                        sequence = self.sequences_by_code_id.get(code_id, {})
+                        code = sequence.get('code', 'No code')
+                        sequence_id = sequence.get('id')
+                        action = btn_Sequence_menu.addAction(code)
+                        xx = lambda chk=False, sequence_id=sequence_id: selectSequence(sequence_id)
+                        action.triggered[()].connect(xx)
+                    action = btn_Sequence_menu.addAction('Create New Sequence...')
+                    xxx = lambda chk=False, sequence_id=0: selectSequence(sequence_id)
+                    action.triggered[()].connect(xxx)
+                    btn_Sequence.setMenu(btn_Sequence_menu)
+                    self.sequence_id = new_sequence.get('id')
+                    btn_Sequence.setText(new_sequence.get('code'))
+
+            elif sequence_id == -1:
+                self.sequence_id = -1
+                btn_Sequence.setText('DefaultSequence')
+                return
+            else:
+                sequence = self.sequences_by_id.get(sequence_id, {})
+                code = sequence.get('code', 'no_code')
+                btn_Sequence.setText(code)
+                self.sequence_id = sequence_id
+                self.prefs['last_sequence_used'] = sequence
+
+        btn_Sequence.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_Sequence.setMinimumSize(280, 28)
+        btn_Sequence.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+        btn_Sequence_menu = QtWidgets.QMenu()
+        action = btn_Sequence_menu.addAction('DefaultSequence')
+        x = lambda chk=False, sequence_id=-1: selectSequence(sequence_id)
+        action.triggered[()].connect(x)
+        for code_id in sorted(self.sequences_by_code_id.keys()):
+            sequence = self.sequences_by_code_id.get(code_id, {})
+            code = sequence.get('code', 'No code')
+            sequence_id = sequence.get('id')
+            action = btn_Sequence_menu.addAction(code)
+            xx = lambda chk=False, sequence_id=sequence_id: selectSequence(sequence_id)
+            action.triggered[()].connect(xx)
+        action = btn_Sequence_menu.addAction('Create New Sequence...')
+        xxx = lambda chk=False, sequence_id=0: selectSequence(sequence_id)
+        action.triggered[()].connect(xxx)
+        btn_Sequence.setMenu(btn_Sequence_menu)
+        vbox.addWidget(btn_Sequence)
+
+        # Shot Task Template label
+
+        lbl_TaskTemplate = QtWidgets.QLabel('Task Template', window)
+        lbl_TaskTemplate.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_TaskTemplate.setMinimumHeight(28)
+        lbl_TaskTemplate.setMaximumHeight(28)
+        lbl_TaskTemplate.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_TaskTemplate)
+
+        # Shot Task Template Menu
+
+        btn_ShotTaskTemplate = QtWidgets.QPushButton(window)
+        flameMenuNewBatch_prefs = self.framework.prefs.get('flameMenuNewBatch', {})
+        shot_task_template = flameMenuNewBatch_prefs.get('shot_task_template', {})
+        code = shot_task_template.get('code', 'No code')
+        btn_ShotTaskTemplate.setText(code)
+        shot_task_templates = self.connector.sg.find('TaskTemplate', [['entity_type', 'is', 'Shot']], ['code'])
+        shot_task_templates_by_id = {x.get('id'):x for x in shot_task_templates}
+        shot_task_templates_by_code_id = {x.get('code') + '_' + str(x.get('id')):x for x in shot_task_templates}
+
+        def selectShotTaskTemplate(template_id):
+            template = shot_task_templates_by_id.get(template_id, {})
+            code = template.get('code', 'no_code')
+            btn_ShotTaskTemplate.setText(code)
+            self.shot_task_template = template
+        btn_ShotTaskTemplate.setFocusPolicy(QtCore.Qt.NoFocus)
+        btn_ShotTaskTemplate.setMinimumSize(258, 28)
+        btn_ShotTaskTemplate.move(40, 102)
+        btn_ShotTaskTemplate.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
+                                    'QPushButton::menu-indicator {image: none;}')
+        btn_ShotTaskTemplate_menu = QtWidgets.QMenu()
+        for code_id in sorted(shot_task_templates_by_code_id.keys()):
+            template = shot_task_templates_by_code_id.get(code_id, {})
+            code = template.get('code', 'no_code')
+            template_id = template.get('id')
+            action = btn_ShotTaskTemplate_menu.addAction(code)
+            x = lambda chk=False, template_id=template_id: selectShotTaskTemplate(template_id)
+            action.triggered[()].connect(x)
+        btn_ShotTaskTemplate.setMenu(btn_ShotTaskTemplate_menu)
+        vbox.addWidget(btn_ShotTaskTemplate)
+
+        # Shot Name Label
+
+        lbl_ShotName = QtWidgets.QLabel('New Shot Name', window)
+        lbl_ShotName.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
+        lbl_ShotName.setMinimumHeight(28)
+        lbl_ShotName.setMaximumHeight(28)
+        lbl_ShotName.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_ShotName)
+
+        # shot name and buttons hbox
+        # hbox_shotname = QtWidgets.QHBoxLayout()
+
+        # Shot Name Text Field
+        def txt_ShotName_textChanged():
+            self.shot_name = txt_ShotName.text()
+        txt_ShotName = QtWidgets.QLineEdit('', window)
+        txt_ShotName.setFocusPolicy(QtCore.Qt.ClickFocus)
+        txt_ShotName.setMinimumSize(280, 28)
+        txt_ShotName.setStyleSheet('QLineEdit {color: #9a9a9a; background-color: #373e47; border-top: 1px inset #black; border-bottom: 1px inset #545454}')
+        txt_ShotName.textChanged.connect(txt_ShotName_textChanged)
+
+        # From Folder Button
+        # btn_FromFolder = QtWidgets.QPushButton('From Folder', window)
+        # btn_FromFolder.setFocusPolicy(QtCore.Qt.NoFocus)
+        # btn_FromFolder.setMinimumSize(78, 28)
+        # btn_FromFolder.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+        #                        'QPushButton:pressed {font:italic; color: #d9d9d9}')
+
+        # hbox_shotname.addWidget(txt_ShotName)
+        # hbox_shotname.addWidget(btn_FromFolder)
+        # vbox.addLayout(hbox_shotname)
+        vbox.addWidget(txt_ShotName)
+
+        # Spacer Label
+
+        lbl_Spacer = QtWidgets.QLabel('', window)
+        lbl_Spacer.setStyleSheet('QFrame {color: #989898; background-color: #313131}')
+        lbl_Spacer.setMinimumHeight(4)
+        lbl_Spacer.setMaximumHeight(4)
+        lbl_Spacer.setAlignment(QtCore.Qt.AlignCenter)
+        vbox.addWidget(lbl_Spacer)
+
+        # Create and Cancel Buttons
+        hbox_Create = QtWidgets.QHBoxLayout()
+
+        select_btn = QtWidgets.QPushButton('Create', window)
+        select_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        select_btn.setMinimumSize(128, 28)
+        select_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        select_btn.clicked.connect(window.accept)
+
+        cancel_btn = QtWidgets.QPushButton('Cancel', window)
+        cancel_btn.setFocusPolicy(QtCore.Qt.NoFocus)
+        cancel_btn.setMinimumSize(128, 28)
+        cancel_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
+                                'QPushButton:pressed {font:italic; color: #d9d9d9}')
+        cancel_btn.clicked.connect(window.reject)
+
+        hbox_Create.addWidget(cancel_btn)
+        hbox_Create.addWidget(select_btn)
+
+        vbox.addLayout(hbox_Create)
+
+        window.setLayout(vbox)
+        if window.exec_():
+            if self.shot_name == '':
+                return {}
+            else:
+                if self.sequence_id == -1:
+                    shot_sequence = self.connector.sg.find_one('Sequence',
+                        [['project', 'is', {'type': 'Project', 'id': self.connector.sg_linked_project_id}], 
+                        ['code', 'is', 'DefaultSequence']]
+                        )
+                    if not shot_sequence:
+                        sequence_data = {'project': {'type': 'Project','id': self.connector.sg_linked_project_id},
+                        'code': 'DefaultSequence'}
+                        shot_sequence = self.connector.sg.create('Sequence', sequence_data)
+                else:
+                    shot_sequence = self.connector.sg.find_one('Sequence', [['id', 'is', self.sequence_id]])
+
+                data = {'project': {'type': 'Project','id': self.connector.sg_linked_project_id},
+                'code': self.shot_name,
+                'sg_sequence': shot_sequence,
+                'task_template': self.shot_task_template}
+                self.log_debug('creating new shot...')
+                new_shot = self.connector.sg.create('Shot', data)
+                self.log_debug('new shot:\n%s' % pformat(new_shot))
+                self.log_debug('updating async cache for current tasks')
+                self.connector.cache_retrive_result('current_tasks', True)
+                self.log_debug('creating new batch')
+                self.create_new_batch(new_shot)
+
+                # for app in self.framework.apps:
+                #    app.rescan()
+
+                return new_shot
+        else:
+            return {}
+
+        '''
+        data = {'project': {'type': 'Project','id': 4},
+        'code': '100_010',
+        'description': 'dark shot with wicked cool ninjas',
+        'task_template': template }
+        result = sg.create('Shot', data)
+        '''
+
+    def build_flame_friendly_path(self, path):
+        import re
+        import glob
+        import fnmatch
+
+        file_names = os.listdir(os.path.dirname(path))
+        if not file_names:
+            return None
+        frame_pattern = re.compile(r"^(.+?)([0-9#]+|[%]0\dd)$")
+        root, ext = os.path.splitext(os.path.basename(path))
+        match = re.search(frame_pattern, root)
+        if not match:
+            return None
+        pattern = os.path.join("%s%s" % (re.sub(match.group(2), "*", root), ext))
+        files = []
+        for file_name in file_names:
+            if fnmatch.fnmatch(file_name, pattern):
+                files.append(os.path.join(os.path.dirname(path), file_name))
+        if not files:
+            return None
+        file_roots = [os.path.splitext(f)[0] for f in files]
+        frame_padding = len(re.search(frame_pattern, file_roots[0]).group(2))
+        offset = len(match.group(1))
+
+        # consitency check
+        frames = []
+        for f in file_roots:
+            try:
+                frame = int(os.path.basename(f)[offset:offset+frame_padding])
+            except:
+                continue
+            frames.append(frame)
+        if not frames:
+            return None
+        min_frame = min(frames)
+        max_frame = max(frames)
+        if ((max_frame + 1) - min_frame) != len(frames):
+            # report what exactly are missing
+            current_frame = min_frame
+            for frame in frames:
+                if not current_frame in frames:
+                    # report logic to be placed here
+                    pass
+                current_frame += 1
+            return None
+        
+        format_str = "[%%0%sd-%%0%sd]" % (
+                frame_padding,
+                frame_padding
+            )
+        
+        frame_spec = format_str % (min_frame, max_frame)
+        file_name = "%s%s%s" % (match.group(1), frame_spec, ext)
+
+        return os.path.join(
+                    os.path.dirname (path),
+                    file_name
+                    )
+
+    def scope_desktop(self, selection):
+        for item in selection:
+            if isinstance(item, (self.flame.PyDesktop)):
+                return True
+        return False
+
+    def flip_assigned(self, *args, **kwargs):
+        self.prefs['show_all'] = not self.prefs['show_all']
+        # self.rescan()
+
+    def page_fwd(self, *args, **kwargs):
+        self.prefs['current_page'] += 1
+
+    def page_bkw(self, *args, **kwargs):
+        self.prefs['current_page'] = max(self.prefs['current_page'] - 1, 0)
+
+    def rescan(self, *args, **kwargs):
+        if not self.flame:
+            try:
+                import flame
+                self.flame = flame
+            except:
+                self.flame = None
+
+        self.connector.cache_retrive_result('current_tasks', True)
+
+        if self.flame:
+            self.flame.execute_shortcut('Rescan Python Hooks')
+            self.log_debug('Rescan Python Hooks')
+
+
 # --- FLAME STARTUP SEQUENCE ---
 # Flame startup sequence is a bit complicated
 # If the app installed in /opt/Autodesk/<user>/python
@@ -2494,7 +3397,7 @@ def load_apps(apps, app_framework, kitsuConnector):
     try:
         apps.append(flameMenuProjectconnect(app_framework, kitsuConnector))
         apps.append(flameBatchBlessing(app_framework))
-        # apps.append(flameMenuNewBatch(app_framework, kitsuConnector))
+        apps.append(flameMenuNewBatch(app_framework, kitsuConnector))
         # apps.append(flameMenuBatchLoader(app_framework, kitsuConnector))
         # apps.append(flameMenuPublisher(app_framework, kitsuConnector))
     except:
