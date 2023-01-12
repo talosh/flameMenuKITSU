@@ -868,6 +868,7 @@ class flameKitsuConnector(object):
 
             if self.preferred_naming_order:
                 for shot in all_shots_for_project:
+                    shot['code'] = shot['name']
                     shot_data = shot.get('data')
                     if isinstance(shot_data, dict):
                         for metadata_key in self.preferred_naming_order:
