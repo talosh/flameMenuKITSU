@@ -875,10 +875,13 @@ class flameMenuProjectconnect(flameMenuApp):
         self.connector = connector
         self.log('initializing')
 
+        import traceback
         try:
             self.preferences_window()
         except Exception as e:
             pprint (e)
+            print(sys.exc_info()[2])
+            traceback.print_tb(e.__traceback__)
 
         '''
         # register async cache query
