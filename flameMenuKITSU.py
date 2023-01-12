@@ -838,9 +838,9 @@ class flameKitsuConnector(object):
     def collect_pipeline_data(self, current_project, current_client):
         try:
             all_tasks_for_person = self.gazu.task.all_tasks_for_person(self.user, client=current_client)
-            all_done_tasks_for_person = self.gazu.task.all_done_tasks_for_person(self.user, client=current_client)
+            all_tasks_for_person.extend(self.gazu.task.all_done_tasks_for_person(self.user, client=current_client))
             project_tasks_for_person = []
-            for x in all_done_tasks_for_person:
+            for x in all_tasks_for_person:
                 if x.get('project_id') == self.linked_project_id:
                     project_tasks_for_person.append(x)
 
