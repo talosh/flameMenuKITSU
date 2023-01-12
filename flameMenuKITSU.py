@@ -755,7 +755,6 @@ class flameKitsuConnector(object):
             self.log_debug('updating project id')
             project = self.gazu.project.get_project_by_name(self.linked_project, client = self.gazu_client)
             if project:
-                pprint (project)
                 self.linked_project_id = project.get('id')
             else:
                 self.log_debug('no project id found for project name: %s' % flame.project.current_project.shotgun_project_name)
@@ -836,8 +835,6 @@ class flameKitsuConnector(object):
                 self.loop_timeout(avg_delta*2, start)
             else:
                 self.loop_timeout(timeout, start)
-
-            # pprint (self.pipeline_data)
 
     def terminate_loops(self):
         self.threads = False
@@ -3449,8 +3446,6 @@ def get_main_menu_custom_ui_actions():
     menu = []
     flameMenuProjectconnectApp = None
     
-    pprint (apps)
-
     for app in apps:
         if app.__class__.__name__ == 'flameMenuProjectconnect':
             flameMenuProjectconnectApp = app
