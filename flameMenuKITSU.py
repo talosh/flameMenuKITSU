@@ -15,7 +15,7 @@ import re
 from pprint import pprint
 from pprint import pformat
 
-__version__ = 'v0.0.1 dev 003'
+__version__ = 'v0.0.1 dev 004'
 
 menu_group_name = 'KITSU'
 app_name = 'flameMenuKITSU'
