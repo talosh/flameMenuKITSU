@@ -508,7 +508,7 @@ class flameKitsuConnector(object):
 
         self.loops = []
         self.threads = True
-        self.loops.append(threading.Thread(target=self.cache_short_loop, args=(4, )))
+        self.loops.append(threading.Thread(target=self.cache_short_loop, args=(8, )))
 
         for loop in self.loops:
             loop.daemon = True
