@@ -843,6 +843,18 @@ class flameKitsuConnector(object):
             current_project = {'id': self.linked_project_id}
         if not current_client:
             current_client = self.gazu_client
+        
+        if not isinstance(self.pipeline_data.get('project_tasks_for_person'), list):
+            self.pipeline_data['project_tasks_for_person'] = []
+        if not isinstance(self.pipeline_data.get('all_episodes_for_project'), list):
+            self.pipeline_data['all_episodes_for_project'] = []
+        if not isinstance(self.pipeline_data.get('all_sequences_for_project'), list):
+            self.pipeline_data['all_sequences_for_project'] = []
+        if not isinstance(self.pipeline_data.get('all_shots_for_project'), list):
+            self.pipeline_data['all_shots_for_project'] = []
+        if not isinstance(self.pipeline_data.get('all_assets_for_project'), list):
+            self.pipeline_data['all_assets_for_project'] = []
+
         try:
             all_tasks_for_person = self.gazu.task.all_tasks_for_person(self.user, client=current_client)
             all_tasks_for_person.extend(self.gazu.task.all_done_tasks_for_person(self.user, client=current_client))
@@ -861,9 +873,6 @@ class flameKitsuConnector(object):
             self.log(pformat(e))
     
         try:
-            if not isinstance(self.pipeline_data.get('all_shots_for_project'), list):
-                self.pipeline_data['all_shots_for_project'] = []
-
             shots_with_modified_code = []
             all_shots_for_project = self.gazu.shot.all_shots_for_project(current_project, client=current_client)
             for shot in all_shots_for_project:
@@ -2697,7 +2706,7 @@ class flameMenuNewBatch(flameMenuApp):
             if not isinstance(cached_tasks, list):
                 # try to collect pipeline data in foreground
                 self.connector.collect_pipeline_data()
-                cached_tasks = self.connector.cache_retrive_result('project_tasks_for_person')
+                cached_tasks = self.connector.pipeline_data('project_tasks_for_person')
                 if not isinstance(cached_tasks, list):
                     # give up
                     return {}
