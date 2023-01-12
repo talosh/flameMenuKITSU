@@ -2675,10 +2675,16 @@ class flameMenuNewBatch(flameMenuApp):
             else:
                 cached_tasks_by_id = {x.get('id'):x for x in cached_tasks}
                 entities = {'Shot': [], 'Asset': []}
-                for shot in self.connector.pipeline_data.get('all_shots_for_project'):
+                shots = self.connector.pipeline_data.get('all_shots_for_project')
+                if not shots:
+                    shots = []
+                for shot in shots:
                     if shot.get('id') in cached_tasks_by_id.keys():
                         entities['Shot'].append(shot)
-                for asset in self.connector.pipeline_data.get('all_assets_for_project'):
+                assets = self.connector.pipeline_data.get('all_assets_for_project')
+                if not assets:
+                    assets = []
+                for asset in assets:
                     if asset.get('id') in cached_tasks_by_id.keys():
                         entities['Asset'].append(asset)
                 return entities
