@@ -846,6 +846,7 @@ class flameKitsuConnector(object):
             self.pipeline_data['project_tasks_for_person'] = project_tasks_for_person
         except Exception as e:
             self.log(pformat(e))
+            self.pipeline_data['project_tasks_for_person'] = []
 
         try:
             self.pipeline_data['all_episodes_for_project'] = self.gazu.shot.all_episodes_for_project(current_project, client=current_client)
