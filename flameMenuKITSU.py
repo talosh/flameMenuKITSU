@@ -2174,10 +2174,13 @@ class flameMenuProjectconnect(flameMenuApp):
         # Close button
 
         def close_prefs_dialog():
-            self.framework.prefs['flameMenuPublisher']['templates']['Shot']['flame_render']['value'] = txt_shot.text()
-            self.framework.prefs['flameMenuPublisher']['templates']['Shot']['flame_batch']['value'] = txt_shotBatch.text()
-            self.framework.prefs['flameMenuPublisher']['templates']['Shot']['version_name']['value'] = txt_shotVersion.text()
-            self.framework.save_prefs()
+            try:
+                self.framework.prefs['flameMenuPublisher']['templates']['Shot']['flame_render']['value'] = txt_shot.text()
+                self.framework.prefs['flameMenuPublisher']['templates']['Shot']['flame_batch']['value'] = txt_shotBatch.text()
+                self.framework.prefs['flameMenuPublisher']['templates']['Shot']['version_name']['value'] = txt_shotVersion.text()
+                self.framework.save_prefs()
+            except Exception as e:
+                self.log(pformat(e))
             window.accept()
 
         close_btn = QtWidgets.QPushButton('Close', window)
