@@ -833,7 +833,7 @@ class flameKitsuConnector(object):
             else:
                 self.loop_timeout(timeout, start)
 
-            pprint (len(self.pipeline_data.get('all_tasks_for_person_for_linked_project')))
+            # pprint (len(self.pipeline_data.get('all_tasks_for_person_for_linked_project')))
 
     def collect_pipeline_data(self, current_project, current_client):
         '''
