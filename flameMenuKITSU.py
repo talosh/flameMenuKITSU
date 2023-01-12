@@ -833,28 +833,20 @@ class flameKitsuConnector(object):
             else:
                 self.loop_timeout(timeout, start)
 
-            # pprint (len(self.pipeline_data.get('all_tasks_for_person_for_linked_project')))
+            pprint (len(self.pipeline_data.get('all_tasks_for_person_for_linked_project')))
 
     def collect_pipeline_data(self, current_project, current_client):
-        '''
         try:
-            all_tasks_for_person = self.gazu.task.all_tasks_for_person(self.user, client=current_client)
-            all_tasks_for_person_by_project_id =  {x.get('project_id'):x for x in all_tasks_for_person}
+            all_active_tasks_for_person = self.gazu.task.all_tasks_for_person(self.user, client=current_client)
+            all_done_tasks_for_person = self.gazu.task.all_done_tasks_for_person(self.user, client=current_client)
+            all_tasks_for_person = all_active_tasks_for_person + all_done_tasks_for_person
+            all_tasks_for_person_by_project_id = {x.get('project_id'):x for x in all_tasks_for_person}
             all_tasks_for_person_for_linked_project = all_tasks_for_person_by_project_id.get(self.linked_project_id)
             if not all_tasks_for_person_for_linked_project:
                 all_tasks_for_person_for_linked_project = []
             self.pipeline_data['all_tasks_for_person'] = all_tasks_for_person
             self.pipeline_data['all_tasks_for_person_by_project_id'] = all_tasks_for_person_by_project_id
             self.pipeline_data['all_tasks_for_person_for_linked_project'] = all_tasks_for_person_for_linked_project
-        except Exception as e:
-            self.log(pformat(e))
-        '''
-
-        try:
-            all_tasks_for_project = self.gazu.shot.all_episodes_for_project(current_project, client=current_client)
-            tasks_by_assignees = {pformat(x.get('assignees')):x for x in all_tasks_for_project}
-            pprint (tasks_by_assignees)
-            self.pipeline_data['all_tasks_for_project'] = all_tasks_for_project
         except Exception as e:
             self.log(pformat(e))
 
