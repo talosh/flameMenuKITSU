@@ -15,11 +15,11 @@ import re
 from pprint import pprint
 from pprint import pformat
 
-__version__ = 'v0.0.1 dev 002'
+__version__ = 'v0.0.1 dev 003'
 
 menu_group_name = 'KITSU'
 app_name = 'flameMenuKITSU'
-DEBUG = True
+DEBUG = False
 
 
 default_templates = {
@@ -876,7 +876,10 @@ class flameMenuProjectconnect(flameMenuApp):
         self.connector = connector
         self.log('initializing')
 
-        self.preferences_window()
+        try:
+            self.preferences_window()
+        except Exception as e:
+            pprint (e)
 
         '''
         # register async cache query
