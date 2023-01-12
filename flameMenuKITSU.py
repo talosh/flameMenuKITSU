@@ -887,8 +887,6 @@ class flameKitsuConnector(object):
             self.log(pformat(e))
             self.pipeline_data['all_assets_for_project'] = []
 
-
-
     def terminate_loops(self):
         self.threads = False
         
@@ -2617,14 +2615,14 @@ class flameMenuNewBatch(flameMenuApp):
                 
             entities_by_name = {}
             for entity in found_entities[entity_type]:
-                entities_by_name[entity.get('name')] = entity
+                entities_by_name[entity.get('code')] = entity
             for entity_name in sorted(entities_by_name.keys()):
                 entity = entities_by_name.get(entity_name)
                 menu_item = {}
-                if entity.get('name') in batch_groups:
-                    menu_item['name'] = '  * ' + entity.get('name')
+                if entity.get('code') in batch_groups:
+                    menu_item['name'] = '  * ' + entity.get('code')
                 else:
-                    menu_item['name'] = '     ' + entity.get('name')
+                    menu_item['name'] = '     ' + entity.get('code')
 
                 self.dynamic_menu_data[str(id(entity))] = entity
                 menu_item['execute'] = getattr(self, str(id(entity)))
