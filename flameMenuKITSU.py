@@ -2428,8 +2428,11 @@ class flameBatchBlessing(flameMenuApp):
 
 class flameMenuNewBatch(flameMenuApp):
     def __init__(self, framework, connector):
-
+        # app constructor
+        flameMenuApp.__init__(self, framework)
+        self.connector = connector
         self.log('initializing')
+
         # app configuration settings
         self.steps_to_ignore = [
             'step_one',
@@ -2439,10 +2442,6 @@ class flameMenuNewBatch(flameMenuApp):
             'Image Sequence',
             'Flame Render'
         ]
-
-        # app constructor
-        flameMenuApp.__init__(self, framework)
-        self.connector = connector
 
         if not self.prefs.master.get(self.name):
             self.prefs['show_all'] = True
