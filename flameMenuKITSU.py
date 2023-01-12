@@ -2529,10 +2529,12 @@ class flameMenuNewBatch(flameMenuApp):
 
         menu = {'actions': []}
         menu['name'] = self.menu_group_name + ' Create new batch:'
-        
+        menu_item_order = 0
+
         menu_item = {}
         menu_item['name'] = '~ Rescan'
-        menu_item['order'] = 1
+        menu_item['order'] = menu_item_order
+        menu_item_order += 1
         menu_item['execute'] = self.rescan
         menu['actions'].append(menu_item)
 
@@ -2541,7 +2543,8 @@ class flameMenuNewBatch(flameMenuApp):
             menu_item['name'] = '~ Show Assigned Only'
         else:
             menu_item['name'] = '~ Show All Avaliable'
-        menu_item['order'] = 2
+        menu_item['order'] = menu_item_order
+        menu_item_order += 1
         menu_item['execute'] = self.flip_assigned
         menu['actions'].append(menu_item)
 
@@ -2550,19 +2553,21 @@ class flameMenuNewBatch(flameMenuApp):
         user_only = not self.prefs['show_all']
         filter_out = ['Project', 'Sequence']
         found_entities = self.get_entities(user_only, filter_out)
-        # pprint (found_entities)
-        return menu
         menu_main_body = []
 
         if not found_entities:
             menu_item = {}
             menu_item['name'] = '- [ Assets ] [+]'
+            menu_item['order'] = menu_item_order
+            menu_item_order += 1
             menu_item['execute'] = self.create_asset_dialog
             menu_item['waitCursor'] = False
             menu_main_body.append(menu_item)
 
             menu_item = {}
             menu_item['name'] = '- [ Shots ] [+]'
+            menu_item['order'] = menu_item_order
+            menu_item_order += 1
             menu_item['execute'] = self.create_shot_dialog
             menu_item['waitCursor'] = False
             menu_main_body.append(menu_item)
@@ -2571,6 +2576,8 @@ class flameMenuNewBatch(flameMenuApp):
             if 'Shot' in found_entities.keys():
                 menu_item = {}
                 menu_item['name'] = '- [ Assets ] [+]'
+                menu_item['order'] = menu_item_order
+                menu_item_order += 1
                 menu_item['execute'] = self.create_asset_dialog
                 menu_item['waitCursor'] = False
                 menu_main_body.append(menu_item)
@@ -2616,6 +2623,8 @@ class flameMenuNewBatch(flameMenuApp):
                 menu_item['name'] = '- [ Shots ] [+]'
                 menu_item['execute'] = self.create_shot_dialog
                 menu_item['waitCursor'] = False
+                menu_item['order'] = menu_item_order
+                menu_item_order += 1
                 menu_main_body.append(menu_item)
 
         if menu_lenght < max_menu_lenght:
@@ -2635,6 +2644,8 @@ class flameMenuNewBatch(flameMenuApp):
                 menu_item = {}
                 menu_item['name'] = '<<[ prev page ' + str(curr_page) + ' of ' + str(num_of_pages) + ' ]'
                 menu_item['execute'] = self.page_bkw
+                menu_item['order'] = menu_item_order
+                menu_item_order += 1
                 menu['actions'].append(menu_item)
 
             # calculate the start and end position of a window
@@ -2645,6 +2656,8 @@ class flameMenuNewBatch(flameMenuApp):
             end_index = window_size*curr_page+window_size + ((curr_page+1) // num_of_pages)
 
             for menu_item in menu_main_body[start_index:end_index]:
+                menu_item['order'] = menu_item_order
+                menu_item_order += 1
                 menu['actions'].append(menu_item)
             
             # decorate bottom with move forward control
@@ -2653,6 +2666,8 @@ class flameMenuNewBatch(flameMenuApp):
                 menu_item = {}
                 menu_item['name'] = '[ next page ' + str(curr_page+2) + ' of ' + str(num_of_pages) + ' ]>>'
                 menu_item['execute'] = self.page_fwd
+                menu_item['order'] = menu_item_order
+                menu_item_order += 1
                 menu['actions'].append(menu_item)
 
         # for action in menu['actions']:
@@ -2687,7 +2702,6 @@ class flameMenuNewBatch(flameMenuApp):
                 for asset in assets:
                     if asset.get('id') in cached_tasks_by_entity_id.keys():
                         entities['Asset'].append(asset)
-                pprint (entities)
                 return entities
         else:
             shots = self.connector.pipeline_data.get('all_shots_for_project')
