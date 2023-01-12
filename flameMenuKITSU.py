@@ -19,7 +19,7 @@ __version__ = 'v0.0.1 dev 004'
 
 menu_group_name = 'KITSU'
 app_name = 'flameMenuKITSU'
-DEBUG = False
+DEBUG = True
 
 
 default_templates = {
@@ -3499,9 +3499,7 @@ def get_main_menu_custom_ui_actions():
 
 get_main_menu_custom_ui_actions.__dict__["waitCursor"] = False
 
-def get_media_panel_custom_ui_actions():
-    print ('get_media_panel_custom_ui_actions')
-    
+def get_media_panel_custom_ui_actions():    
     def scope_desktop(selection):
         import flame
         for item in selection:
@@ -3531,9 +3529,7 @@ def get_media_panel_custom_ui_actions():
     for app in apps:
         if app.__class__.__name__ == 'flameMenuNewBatch':
             if scope_desktop(selection) or (not selection):
-                print ('truing to build menu from flameMenuNewBatch')
                 app_menu = app.build_menu()
-                pprint (app_menu)
                 if app_menu:
                     menu.append(app_menu)
 
