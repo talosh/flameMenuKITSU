@@ -843,15 +843,7 @@ class flameKitsuConnector(object):
             for x in all_tasks_for_person:
                 if x.get('project_id') == self.linked_project_id:
                     project_tasks_for_person.append(x)
-
-            pprint (len (project_tasks_for_person))
-            
-            # all_tasks_for_person_for_linked_project = all_tasks_for_person_by_project_id.get(self.linked_project_id)
-            # if not all_tasks_for_person_for_linked_project:
-            #    all_tasks_for_person_for_linked_project = []
-            #self.pipeline_data['all_tasks_for_person'] = all_tasks_for_person
-            #self.pipeline_data['all_tasks_for_person_by_project_id'] = all_tasks_for_person_by_project_id
-            #self.pipeline_data['all_tasks_for_person_for_linked_project'] = all_tasks_for_person_for_linked_project
+            self.pipeline_data['project_tasks_for_person'] = project_tasks_for_person
         except Exception as e:
             self.log(pformat(e))
 
