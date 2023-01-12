@@ -21,6 +21,7 @@ menu_group_name = 'KITSU'
 app_name = 'flameMenuKITSU'
 DEBUG = True
 
+preferred_naming_order = ['30_dl_vfx_id', '00_shot_id']
 
 default_templates = {
 # Resolved fields are:
@@ -504,6 +505,8 @@ class flameKitsuConnector(object):
         self.linked_project_id = None
         self.pipeline_data = {}
 
+        self.preferred_naming_order = preferred_naming_order
+
         self.check_linked_project()
 
         self.loops = []
@@ -858,7 +861,22 @@ class flameKitsuConnector(object):
             self.log(pformat(e))
     
         try:
-            self.pipeline_data['all_shots_for_project'] = self.gazu.shot.all_shots_for_project(current_project, client=current_client)
+            all_shots_for_project = self.gazu.shot.all_shots_for_project(current_project, client=current_client)
+            all_shots_by_id = {x.get('id'):x for x in all_shots_for_project}
+
+            # shots not always named with name
+
+            if self.preferred_naming_order:
+                for shot in all_shots_for_project:
+                    shot_data = shot.get('data')
+                    if isinstance(shot_data, dict):
+                        for metadata_key in self.preferred_naming_order:
+                            if shot_data.get(metadata_key):
+                                shot['code'] = shot_data.get(metadata_key)
+                                all_shots_by_id[shot['id']] = shot
+                                break
+
+            self.pipeline_data['all_shots_for_project'] = all_shots_by_id.values()
         except Exception as e:
             self.log(pformat(e))
             self.pipeline_data['all_shots_for_project'] = []
