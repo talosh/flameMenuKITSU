@@ -1901,8 +1901,10 @@ class flameMenuProjectconnect(flameMenuApp):
         btn_shotBatchDefault.clicked.connect(setShotBatchDefault)
 
         # Publish::Templates::ShotPane: Batch template text field
-
-        txt_shotBatch_value = self.framework.prefs.get('flameMenuPublisher', {}).get('templates', {}).get('Shot', {}).get('flame_batch').get('value', '')
+        try:
+            txt_shotBatch_value = self.framework.prefs.get('flameMenuPublisher', {}).get('templates', {}).get('Shot', {}).get('flame_batch').get('value', '')
+        except Exception as e:
+            txt_shotBatch_value = pformat(e)
         txt_shotBatch = QtWidgets.QLineEdit(txt_shotBatch_value, paneShotTemplates)
         txt_shotBatch.setFocusPolicy(QtCore.Qt.ClickFocus)
         txt_shotBatch.setMinimumSize(588, 28)
