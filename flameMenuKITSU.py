@@ -861,6 +861,7 @@ class flameKitsuConnector(object):
             self.log(pformat(e))
     
         try:
+            '''
             all_shots_for_project = self.gazu.shot.all_shots_for_project(current_project, client=current_client)
             all_shots_by_id = {x.get('id'):x for x in all_shots_for_project}
 
@@ -876,8 +877,9 @@ class flameKitsuConnector(object):
                                 shot['code'] = shot_data.get(metadata_key)
                                 all_shots_by_id[shot['id']] = shot
                                 break
+            '''
 
-            self.pipeline_data['all_shots_for_project'] = all_shots_by_id.values()
+            self.pipeline_data['all_shots_for_project'] = self.gazu.shot.all_shots_for_project(current_project, client=current_client)
         except Exception as e:
             self.log(pformat(e))
             self.pipeline_data['all_shots_for_project'] = []
