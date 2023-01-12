@@ -3400,7 +3400,9 @@ def load_apps(apps, app_framework, kitsuConnector):
         # apps.append(flameMenuBatchLoader(app_framework, kitsuConnector))
         # apps.append(flameMenuPublisher(app_framework, kitsuConnector))
     except Exception as e:
+        import traceback
         pprint(e)
+        traceback.print_tb(e.__traceback__)
 
     app_framework.apps = apps
     if DEBUG:
