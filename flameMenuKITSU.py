@@ -2428,6 +2428,8 @@ class flameBatchBlessing(flameMenuApp):
 
 class flameMenuNewBatch(flameMenuApp):
     def __init__(self, framework, connector):
+        
+        self.log('initializing')
         # app configuration settings
         self.steps_to_ignore = [
             'step_one',
