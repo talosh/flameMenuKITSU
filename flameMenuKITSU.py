@@ -3496,8 +3496,10 @@ def get_media_panel_custom_ui_actions():
     try:
         import flame
         selection = flame.media_panel.selected_entries
-    except:
-        pass
+    except Exception as e:
+        pprint(e)
+
+    pprint (apps)
 
     for app in apps:
         if app.__class__.__name__ == 'flameMenuNewBatch':
