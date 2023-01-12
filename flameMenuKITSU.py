@@ -870,7 +870,7 @@ class flameKitsuConnector(object):
                     if data:
                         code = data.get(shot_code_field)
                         if code:
-                            pprint (code)
+                            shot['code'] = code
                 self.pipeline_data['all_shots_for_project'].append(shot)
         except Exception as e:
             self.log(pformat(e))
