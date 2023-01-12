@@ -839,6 +839,8 @@ class flameKitsuConnector(object):
         try:
             all_active_tasks_for_person = self.gazu.task.all_tasks_for_person(self.user, client=current_client)
             all_done_tasks_for_person = self.gazu.task.all_done_tasks_for_person(self.user, client=current_client)
+            pprint (len(all_active_tasks_for_person))
+            pprint (len(all_done_tasks_for_person))
             all_tasks_for_person = all_active_tasks_for_person + all_done_tasks_for_person
             all_tasks_for_person_by_project_id = {x.get('project_id'):x for x in all_tasks_for_person}
             all_tasks_for_person_for_linked_project = all_tasks_for_person_by_project_id.get(self.linked_project_id)
