@@ -2550,7 +2550,7 @@ class flameMenuNewBatch(flameMenuApp):
         user_only = not self.prefs['show_all']
         filter_out = ['Project', 'Sequence']
         found_entities = self.get_entities(user_only, filter_out)
-        pprint (found_entities)
+        # pprint (found_entities)
         return menu
         menu_main_body = []
 
@@ -2673,21 +2673,21 @@ class flameMenuNewBatch(flameMenuApp):
             if not cached_tasks:
                 return {}
             else:
-                cached_tasks_by_id = {x.get('id'):x for x in cached_tasks}
+                cached_tasks_by_entity_id = {x.get('entity_id'):x for x in cached_tasks}
                 entities = {'Shot': [], 'Asset': []}
                 shots = self.connector.pipeline_data.get('all_shots_for_project')
                 if not shots:
                     shots = []
                 print ('shots len: %s' % len(shots))
                 for shot in shots:
-                    if shot.get('id') in cached_tasks_by_id.keys():
+                    if shot.get('id') in cached_tasks_by_entity_id.keys():
                         entities['Shot'].append(shot)
                 assets = self.connector.pipeline_data.get('all_assets_for_project')
                 if not assets:
                     assets = []
                 print ('assets len: %s' % len(assets))
                 for asset in assets:
-                    if asset.get('id') in cached_tasks_by_id.keys():
+                    if asset.get('id') in cached_tasks_by_entity_id.keys():
                         entities['Asset'].append(asset)
                 return entities
         else:
