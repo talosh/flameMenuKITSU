@@ -3399,8 +3399,8 @@ def load_apps(apps, app_framework, kitsuConnector):
         apps.append(flameMenuNewBatch(app_framework, kitsuConnector))
         # apps.append(flameMenuBatchLoader(app_framework, kitsuConnector))
         # apps.append(flameMenuPublisher(app_framework, kitsuConnector))
-    except:
-        pass
+    except Exception as e:
+        pprint(e)
 
     app_framework.apps = apps
     if DEBUG:
