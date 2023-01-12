@@ -1863,7 +1863,10 @@ class flameMenuProjectconnect(flameMenuApp):
         btn_shotDefault.clicked.connect(setShotDefault)
 
         # Publish::Templates::ShotPane: Publish template text field
-        txt_shot_value = self.framework.prefs.get('flameMenuPublisher', {}).get('templates', {}).get('Shot', {}).get('flame_render').get('value', '')
+        try:
+            txt_shot_value = self.framework.prefs.get('flameMenuPublisher', {}).get('templates', {}).get('Shot', {}).get('flame_render').get('value', '')
+        except Exception as e:
+            txt_shot_value = pformat(e)
         txt_shot = QtWidgets.QLineEdit(txt_shot_value, paneShotTemplates)
         txt_shot.setFocusPolicy(QtCore.Qt.ClickFocus)
         txt_shot.setFixedSize(588, 28)
