@@ -2756,16 +2756,7 @@ class flameMenuNewBatch(flameMenuApp):
             return {'Shot': shots, 'Asset': assets}
 
     def create_new_batch(self, entity):
-        pprint (entity)
-        return
         # check if flame batch with entity name already in desktop
-
-        entity = sg.find_one (
-            entity.get('type'),
-            [['id', 'is', entity.get('id')]],
-            ['code', 'sg_head_in', 'sg_tail_out', 'sg_vfx_requirements']
-        )
-
         batch_groups = []
         for batch_group in self.flame.project.current_project.current_workspace.desktop.batch_groups:
             batch_groups.append(batch_group.name.get_value())
@@ -2777,6 +2768,8 @@ class flameMenuNewBatch(flameMenuApp):
         if code in batch_groups:
             return False
 
+        
+        '''
         publishes = sg.find (
             'PublishedFile',
             [['entity', 'is', {'id': entity.get('id'), 'type': entity.get('type')}]],
@@ -2827,8 +2820,9 @@ class flameMenuNewBatch(flameMenuApp):
                     version_number = publish.get('version_number')
                     if version_number == max_version:
                         publishes_to_import.append(publish)
-        
+        '''
         flame_paths_to_import = []
+        '''
         for publish in publishes_to_import:
             path_cache = publish.get('path_cache')
             if not path_cache:
@@ -2851,9 +2845,12 @@ class flameMenuNewBatch(flameMenuApp):
         sg_vfx_req = entity.get('sg_vfx_requirements')
         if not sg_vfx_req:
             sg_vfx_req = 'no requirements specified'
+        '''
 
-        dur = (sg_tail_out - sg_head_in) + 1
-
+        dur = entity.get('nb_frames')
+        if not dur:
+            dur = 100
+        
         self.flame.batch.create_batch_group (
             code, start_frame = 1, duration = dur
         )
