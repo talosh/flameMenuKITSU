@@ -1939,8 +1939,10 @@ class flameMenuProjectconnect(flameMenuApp):
         btn_shotVersionDefault.clicked.connect(setShotVersionDefault)
 
         # Publish::Templates::ShotPane: Vesrion template text field
-
-        txt_shotVersion_value = self.framework.prefs.get('flameMenuPublisher', {}).get('templates', {}).get('Shot', {}).get('version_name').get('value', '')
+        try:
+            txt_shotVersion_value = self.framework.prefs.get('flameMenuPublisher', {}).get('templates', {}).get('Shot', {}).get('version_name').get('value', '')
+        except Exception as e:
+            txt_shotVersion_value = pformat(e)
         txt_shotVersion = QtWidgets.QLineEdit(txt_shotVersion_value, paneShotTemplates)
         txt_shotVersion.setFocusPolicy(QtCore.Qt.ClickFocus)
         txt_shotVersion.setMinimumSize(256, 28)
