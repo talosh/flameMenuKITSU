@@ -811,7 +811,7 @@ class flameKitsuConnector(object):
             projects_by_id = {x.get('id'):x for x in self.pipeline_data['active_projects']}
             current_project = projects_by_id.get(self.linked_project_id)
 
-            self.collect_pipeline_data(current_project, shortloop_gazu_client)
+            self.collect_pipeline_data(current_project=current_project, current_client=shortloop_gazu_client)
 
             self.gazu.log_out(client = shortloop_gazu_client)
 
@@ -835,7 +835,11 @@ class flameKitsuConnector(object):
 
             # pprint (len(self.pipeline_data.get('all_tasks_for_person_for_linked_project')))
 
-    def collect_pipeline_data(self, current_project, current_client):
+    def collect_pipeline_data(self, current_project = None, current_client = None):
+        if not current_project:
+            current_project = {'id': self.linked_project_id}
+        if not current_client:
+            current_client = self.gazu_client
         try:
             all_tasks_for_person = self.gazu.task.all_tasks_for_person(self.user, client=current_client)
             all_tasks_for_person.extend(self.gazu.task.all_done_tasks_for_person(self.user, client=current_client))
@@ -857,6 +861,7 @@ class flameKitsuConnector(object):
             self.pipeline_data['all_shots_for_project'] = self.gazu.shot.all_shots_for_project(current_project, client=current_client)
         except Exception as e:
             self.log(pformat(e))
+            self.pipeline_data['all_shots_for_project'] = []
 
         try:
             self.pipeline_data['all_sequences_for_project'] = self.gazu.shot.all_sequences_for_project(current_project, client=current_client)
@@ -867,6 +872,7 @@ class flameKitsuConnector(object):
             self.pipeline_data['all_assets_for_project'] = self.gazu.asset.all_assets_for_project(current_project, client=current_client)
         except Exception as e:
             self.log(pformat(e))
+            self.pipeline_data['all_assets_for_project'] = []
 
 
 
@@ -2544,6 +2550,8 @@ class flameMenuNewBatch(flameMenuApp):
         user_only = not self.prefs['show_all']
         filter_out = ['Project', 'Sequence']
         found_entities = self.get_entities(user_only, filter_out)
+        pprint (found_entities)
+        return menu
         menu_main_body = []
 
         if not found_entities:
@@ -2653,51 +2661,32 @@ class flameMenuNewBatch(flameMenuApp):
         return menu
 
     def get_entities(self, user_only = True, filter_out=[]):
-        return {}
-
-        cached_tasks = self.connector.cache_retrive_result('current_tasks')
-
-        if not isinstance(cached_tasks, list):
-            
-            # try to unregister cache and register again
-
-            self.unregister_query()
-            self.register_query()
-
-            cached_tasks = self.connector.cache_retrive_result('current_tasks')
-
-            if not isinstance(cached_tasks, list):
-
-                # give up
-
-                return {}
-
-        if not cached_tasks:
-            return {}
-
-        tasks = []
         if user_only:
-            for task in cached_tasks:
-                task_assignees = task.get('task_assignees')
-                for task_assignee in task_assignees:
-                    if task_assignee.get('id') == self.connector.sg_human_user.get('id'):
-                        tasks.append(task)
+            cached_tasks = self.connector.pipeline_data.get('project_tasks_for_person')
+            if not isinstance(cached_tasks, list):
+                # try to collect pipeline data in foreground
+                self.connector.collect_pipeline_data()
+                cached_tasks = self.connector.cache_retrive_result('project_tasks_for_person')
+                if not isinstance(cached_tasks, list):
+                    # give up
+                    return {}
+            if not cached_tasks:
+                return {}
+            else:
+                cached_tasks_by_id = {x.get('id'):x for x in cached_tasks}
+                entities = {'Shot': [], 'Asset': []}
+                for shot in self.connector.pipeline_data.get('all_shots_for_project'):
+                    if shot.get('id') in cached_tasks_by_id.keys():
+                        entities['Shot'].append(shot)
+                for asset in self.connector.pipeline_data.get('all_assets_for_project'):
+                    if asset.get('id') in cached_tasks_by_id.keys():
+                        entities['Asset'].append(asset)
+                return entities
         else:
-            tasks = list(cached_tasks)
-
-        entities = {}
-        for task in tasks:
-            if task['entity']:
-                task_entity_type = task['entity']['type']
-                if task_entity_type in filter_out:
-                    continue
-                task_entity_id = task['entity']['id']
-                if task_entity_type not in entities.keys():
-                    entities[task_entity_type] = {}
-                entities[task_entity_type][task_entity_id] = task['entity']
-
-        for entity_type in entities.keys():
-            entities[entity_type] = entities[entity_type].values()
+            entities = {
+                'Shot': self.connector.pipeline_data.get('all_shots_for_project'),
+                'Asset': self.connector.pipeline_data.get('all_assets_for_project')
+            }
 
         return entities
 
