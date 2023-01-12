@@ -811,10 +811,7 @@ class flameKitsuConnector(object):
             projects_by_id = {x.get('id'):x for x in self.pipeline_data['active_projects']}
             current_project = projects_by_id.get(self.linked_project_id)
 
-            try:
-                self.pipeline_data['all_tasks_for_project'] = self.gazu.task.all_tasks_for_project(current_project, client=shortloop_gazu_client)
-            except Exception as e:
-                self.log(pformat(e))
+            self.collect_pipeline_data(current_project, shortloop_gazu_client)
 
             self.gazu.log_out(client = shortloop_gazu_client)
 
@@ -835,6 +832,35 @@ class flameKitsuConnector(object):
                 self.loop_timeout(avg_delta*2, start)
             else:
                 self.loop_timeout(timeout, start)
+
+    def collect_pipeline_data(self, current_project, current_client):
+
+        try:
+            self.pipeline_data['all_tasks_for_project'] = self.gazu.task.all_tasks_for_project(current_project, client=current_client)
+        except Exception as e:
+            self.log(pformat(e))
+
+        try:
+            self.pipeline_data['all_episodes_for_project'] = self.gazu.shot.all_episodes_for_project(current_project, client=current_client)
+        except Exception as e:
+            self.log(pformat(e))
+    
+        try:
+            self.pipeline_data['all_shots_for_project'] = self.gazu.shot.all_shots_for_project(current_project, client=current_client)
+        except Exception as e:
+            self.log(pformat(e))
+
+        try:
+            self.pipeline_data['all_sequences_for_project'] = self.gazu.shot.all_sequences_for_project(current_project, client=current_client)
+        except Exception as e:
+            self.log(pformat(e))
+
+        try:
+            self.pipeline_data['all_assets_for_project'] = self.gazu.asset.all_assets_for_project(current_project, client=current_client)
+        except Exception as e:
+            self.log(pformat(e))
+
+
 
     def terminate_loops(self):
         self.threads = False
