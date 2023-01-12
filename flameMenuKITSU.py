@@ -876,6 +876,8 @@ class flameMenuProjectconnect(flameMenuApp):
         self.connector = connector
         self.log('initializing')
 
+        self.preferences_window()
+
         '''
         # register async cache query
         self.active_projects_uid = self.connector.cache_register({
@@ -1196,7 +1198,6 @@ class flameMenuProjectconnect(flameMenuApp):
 
             paneSuperclips.setVisible(True)
 
-        window = None
         window = QtWidgets.QDialog()
         window.setFixedSize(1028, 328)
         window.setWindowTitle(self.framework.bundle_name + ' Preferences')
@@ -1394,139 +1395,6 @@ class flameMenuProjectconnect(flameMenuApp):
         btn_batchLinkBrowse.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
                                     'QPushButton:pressed {font:italic; color: #d9d9d9}')
         btn_batchLinkBrowse.clicked.connect(batchLinkBrowse)
-
-        # General::Loader PublishedFileTypes label
-
-        '''
-
-        lbl_PublishedFileTypes = QtWidgets.QLabel('Loader Published File Types', paneGeneral)
-        lbl_PublishedFileTypes.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
-        lbl_PublishedFileTypes.setMinimumSize(536, 28)
-        lbl_PublishedFileTypes.move(304, 68)
-        lbl_PublishedFileTypes.setAlignment(QtCore.Qt.AlignCenter)
-
-        # General::Loader PublishedFileTypes Button 1
-
-        btn_PublishedFileType1 = QtWidgets.QPushButton(paneGeneral)
-        btn_PublishedFileType1.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_PublishedFileType1.setText('Not Implemented')
-        btn_PublishedFileType1.setMinimumSize(128, 28)
-        btn_PublishedFileType1.move(304, 102)
-        btn_PublishedFileType1.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
-                                    'QPushButton::menu-indicator {image: none;}')
-        btn_PublishedFileType1_menu = QtWidgets.QMenu()
-        btn_PublishedFileType1_menu.addAction('File Sequence', set_presetTypeImage)
-        btn_PublishedFileType1_menu.addAction('Movie', set_presetTypeMovie)
-        btn_PublishedFileType1.setMenu(btn_PublishedFileType1_menu)
-
-        # General::Loader PublishedFileTypes Button 2
-
-        btn_PublishedFileType2 = QtWidgets.QPushButton(paneGeneral)
-        btn_PublishedFileType2.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_PublishedFileType2.setText('Not Implemented')
-        btn_PublishedFileType2.setMinimumSize(128, 28)
-        btn_PublishedFileType2.move(440, 102)
-        btn_PublishedFileType2.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
-                                    'QPushButton::menu-indicator {image: none;}')
-        btn_PublishedFileType2_menu = QtWidgets.QMenu()
-        btn_PublishedFileType2_menu.addAction('File Sequence', set_presetTypeImage)
-        btn_PublishedFileType2_menu.addAction('Movie', set_presetTypeMovie)
-        btn_PublishedFileType2.setMenu(btn_PublishedFileType1_menu)
-
-        # General::Loader PublishedFileTypes Button 3
-
-        btn_PublishedFileType3 = QtWidgets.QPushButton(paneGeneral)
-        btn_PublishedFileType3.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_PublishedFileType3.setText('Not Implemented')
-        btn_PublishedFileType3.setMinimumSize(128, 28)
-        btn_PublishedFileType3.move(576, 102)
-        btn_PublishedFileType3.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
-                                    'QPushButton::menu-indicator {image: none;}')
-        btn_PublishedFileType3_menu = QtWidgets.QMenu()
-        btn_PublishedFileType3_menu.addAction('File Sequence', set_presetTypeImage)
-        btn_PublishedFileType3_menu.addAction('Movie', set_presetTypeMovie)
-        btn_PublishedFileType3.setMenu(btn_PublishedFileType1_menu)
-
-        # General::Loader PublishedFileTypes Button 4
-
-        btn_PublishedFileType4 = QtWidgets.QPushButton(paneGeneral)
-        btn_PublishedFileType4.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_PublishedFileType4.setText('Not Implemented')
-        btn_PublishedFileType4.setMinimumSize(128, 28)
-        btn_PublishedFileType4.move(712, 102)
-        btn_PublishedFileType4.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
-                                    'QPushButton::menu-indicator {image: none;}')
-        btn_PublishedFileType4_menu = QtWidgets.QMenu()
-        btn_PublishedFileType4_menu.addAction('File Sequence', set_presetTypeImage)
-        btn_PublishedFileType4_menu.addAction('Movie', set_presetTypeMovie)
-        btn_PublishedFileType4.setMenu(btn_PublishedFileType1_menu)
-
-        # General::Loader PublishedFileTypes Button 5
-
-        btn_PublishedFileType5 = QtWidgets.QPushButton(paneGeneral)
-        btn_PublishedFileType5.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_PublishedFileType5.setText('Flame Batch File')
-        btn_PublishedFileType5.setMinimumSize(128, 28)
-        btn_PublishedFileType5.move(304, 136)
-        btn_PublishedFileType5.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
-                                    'QPushButton::menu-indicator {image: none;}')
-        btn_PublishedFileType5_menu = QtWidgets.QMenu()
-        btn_PublishedFileType5_menu.addAction('File Sequence', set_presetTypeImage)
-        btn_PublishedFileType5_menu.addAction('Movie', set_presetTypeMovie)
-        btn_PublishedFileType5.setMenu(btn_PublishedFileType1_menu)
-
-        # General::Loader PublishedFileTypes Button 6
-
-        btn_PublishedFileType6 = QtWidgets.QPushButton(paneGeneral)
-        btn_PublishedFileType6.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_PublishedFileType6.setText('Flame Batch File')
-        btn_PublishedFileType6.setMinimumSize(128, 28)
-        btn_PublishedFileType6.move(440, 136)
-        btn_PublishedFileType6.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
-                                    'QPushButton::menu-indicator {image: none;}')
-        btn_PublishedFileType6_menu = QtWidgets.QMenu()
-        btn_PublishedFileType6_menu.addAction('File Sequence', set_presetTypeImage)
-        btn_PublishedFileType6_menu.addAction('Movie', set_presetTypeMovie)
-        btn_PublishedFileType6.setMenu(btn_PublishedFileType1_menu)
-
-        # General::Loader PublishedFileTypes Button 7
-
-        btn_PublishedFileType7 = QtWidgets.QPushButton(paneGeneral)
-        btn_PublishedFileType7.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_PublishedFileType7.setText('Flame Batch File')
-        btn_PublishedFileType7.setMinimumSize(128, 28)
-        btn_PublishedFileType7.move(576, 136)
-        btn_PublishedFileType7.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
-                                    'QPushButton::menu-indicator {image: none;}')
-        btn_PublishedFileType7_menu = QtWidgets.QMenu()
-        btn_PublishedFileType7_menu.addAction('File Sequence', set_presetTypeImage)
-        btn_PublishedFileType7_menu.addAction('Movie', set_presetTypeMovie)
-        btn_PublishedFileType7.setMenu(btn_PublishedFileType1_menu)
-
-        # General::Loader PublishedFileTypes Button 8
-
-        btn_PublishedFileType8 = QtWidgets.QPushButton(paneGeneral)
-        btn_PublishedFileType8.setFocusPolicy(QtCore.Qt.NoFocus)
-        btn_PublishedFileType8.setText('Flame Batch File')
-        btn_PublishedFileType8.setMinimumSize(128, 28)
-        btn_PublishedFileType8.move(712, 136)
-        btn_PublishedFileType8.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #29323d; border-top: 1px inset #555555; border-bottom: 1px inset black}'
-                                    'QPushButton:pressed {font:italic; color: #d9d9d9}'
-                                    'QPushButton::menu-indicator {image: none;}')
-        btn_PublishedFileType8_menu = QtWidgets.QMenu()
-        btn_PublishedFileType8_menu.addAction('File Sequence', set_presetTypeImage)
-        btn_PublishedFileType8_menu.addAction('Movie', set_presetTypeMovie)
-        btn_PublishedFileType8.setMenu(btn_PublishedFileType1_menu)
-
-        ''' 
-        # end of loader PublishedFileType settings
 
         # General::Create Default Task Template Label
 
