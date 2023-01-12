@@ -837,14 +837,15 @@ class flameKitsuConnector(object):
 
     def collect_pipeline_data(self, current_project, current_client):
         try:
-            all_active_tasks_for_person = self.gazu.task.all_tasks_for_person(self.user, client=current_client)
+            all_tasks_for_person = self.gazu.task.all_tasks_for_person(self.user, client=current_client)
             all_done_tasks_for_person = self.gazu.task.all_done_tasks_for_person(self.user, client=current_client)
-            all_active_tasks_for_person_by_project_id = {x.get('project_id'):x for x in all_active_tasks_for_person}
-            all_done_tasks_for_person_by_project_id = {y.get('project_id'):y for y in all_done_tasks_for_person}
-            all_active_tasks_for_person_for_linked_project = all_active_tasks_for_person_by_project_id.get(self.linked_project_id)
-            all_done_tasks_for_person_for_linked_project = all_done_tasks_for_person_by_project_id.get(self.linked_project_id)
-            pprint (len(all_active_tasks_for_person_for_linked_project))
-            pprint (len(all_done_tasks_for_person_for_linked_project))
+            project_tasks_for_person = []
+            for x in all_tasks_for_person:
+                if x.get('project_id') == self.linked_project_id:
+                    project_tasks_for_person.append(x)
+
+            pprint (len (project_tasks_for_person))
+            
             # all_tasks_for_person_for_linked_project = all_tasks_for_person_by_project_id.get(self.linked_project_id)
             # if not all_tasks_for_person_for_linked_project:
             #    all_tasks_for_person_for_linked_project = []
