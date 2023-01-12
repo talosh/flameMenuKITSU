@@ -2683,12 +2683,19 @@ class flameMenuNewBatch(flameMenuApp):
                         entities['Asset'].append(asset)
                 return entities
         else:
-            entities = {
-                'Shot': self.connector.pipeline_data.get('all_shots_for_project'),
-                'Asset': self.connector.pipeline_data.get('all_assets_for_project')
-            }
-
-        return entities
+            shots = self.connector.pipeline_data.get('all_shots_for_project')
+            if not isinstance(shots, list):
+                self.connector.collect_pipeline_data()
+                shots = self.connector.pipeline_data.get('all_shots_for_project')
+                if not shots:
+                    shots = []
+            assets = self.connector.pipeline_data.get('all_assets_for_project')
+            if not isinstance(assets, list):
+                self.connector.collect_pipeline_data()
+                assets = self.connector.pipeline_data.get('all_assets_for_project')
+                if not assets:
+                    assets = []
+            return {'Shot': shots, 'Asset': assets}
 
     def create_new_batch(self, entity):
         sg = self.connector.sg
