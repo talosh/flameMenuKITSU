@@ -871,6 +871,23 @@ class flameKitsuConnector(object):
             self.pipeline_data['all_episodes_for_project'] = self.gazu.shot.all_episodes_for_project(current_project, client=current_client)
         except Exception as e:
             self.log(pformat(e))
+
+        try:
+            assets_with_modified_code = []
+            all_assets_for_project = self.gazu.asset.all_assets_for_project(current_project, client=current_client)
+            for asset in all_assets_for_project:
+                asset['code'] = asset['name']
+                if self.shot_code_field:
+                    data = asset.get('data')
+                    if data:
+                        code = data.get(shot_code_field)
+                        if code:
+                            asset['code'] = code
+                assets_with_modified_code.append(asset)
+            self.pipeline_data['all_assets_for_project'] = assets_with_modified_code
+        except Exception as e:
+            self.log(pformat(e))
+            self.pipeline_data['all_assets_for_project'] = []
     
         try:
             shots_with_modified_code = []
@@ -895,11 +912,6 @@ class flameKitsuConnector(object):
         except Exception as e:
             self.log(pformat(e))
 
-        try:
-            self.pipeline_data['all_assets_for_project'] = self.gazu.asset.all_assets_for_project(current_project, client=current_client)
-        except Exception as e:
-            self.log(pformat(e))
-            self.pipeline_data['all_assets_for_project'] = []
 
     def terminate_loops(self):
         self.threads = False
