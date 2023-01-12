@@ -2021,7 +2021,10 @@ class flameMenuProjectconnect(flameMenuApp):
         btn_assetDefault.clicked.connect(setAssetDefault)
 
         # Publish::Templates::AssetPane: Publish template text field
-        txt_asset_value = self.framework.prefs.get('flameMenuPublisher', {}).get('templates', {}).get('Asset', {}).get('flame_render').get('value', '')
+        try:
+            txt_asset_value = self.framework.prefs.get('flameMenuPublisher', {}).get('templates', {}).get('Asset', {}).get('flame_render').get('value', '')
+        except Exception as e:
+            txt_asset_value = pformat(e)
         txt_asset = QtWidgets.QLineEdit(txt_asset_value, paneAssetTemplates)
         txt_asset.setFocusPolicy(QtCore.Qt.ClickFocus)
         txt_asset.setFixedSize(588, 28)
@@ -2058,7 +2061,10 @@ class flameMenuProjectconnect(flameMenuApp):
         btn_assetBatchDefault.clicked.connect(setAssetBatchDefault)
 
         # Publish::Templates::AssetPane: Batch template text field
-        txt_assetBatch_value = self.framework.prefs.get('flameMenuPublisher', {}).get('templates', {}).get('Asset', {}).get('flame_batch').get('value', '')
+        try:
+            txt_assetBatch_value = self.framework.prefs.get('flameMenuPublisher', {}).get('templates', {}).get('Asset', {}).get('flame_batch').get('value', '')
+        except Exception as e:
+            txt_assetBatch_value = pformat(e)
         txt_assetBatch = QtWidgets.QLineEdit(txt_assetBatch_value, paneAssetTemplates)
         txt_assetBatch.setFocusPolicy(QtCore.Qt.ClickFocus)
         txt_assetBatch.setMinimumSize(588, 28)
@@ -2093,7 +2099,10 @@ class flameMenuProjectconnect(flameMenuApp):
         btn_assetVersionDefault.clicked.connect(setAssetVersionDefault)
 
         # Publish::Templates::AssetPane: Vesrion template text field
-        txt_assetVersion_value = self.framework.prefs.get('flameMenuPublisher', {}).get('templates', {}).get('Asset', {}).get('version_name').get('value', '')
+        try:
+            txt_assetVersion_value = self.framework.prefs.get('flameMenuPublisher', {}).get('templates', {}).get('Asset', {}).get('version_name').get('value', '')
+        except Exception as e:
+            txt_assetVersion_value = pformat(e)
         txt_assetVersion = QtWidgets.QLineEdit(txt_assetVersion_value, paneAssetTemplates)
         txt_assetVersion.setFocusPolicy(QtCore.Qt.ClickFocus)
         txt_assetVersion.setMinimumSize(256, 28)
