@@ -2428,7 +2428,7 @@ class flameBatchBlessing(flameMenuApp):
 
 class flameMenuNewBatch(flameMenuApp):
     def __init__(self, framework, connector):
-        
+
         self.log('initializing')
         # app configuration settings
         self.steps_to_ignore = [
@@ -3501,7 +3501,9 @@ def get_media_panel_custom_ui_actions():
     for app in apps:
         if app.__class__.__name__ == 'flameMenuNewBatch':
             if scope_desktop(selection) or (not selection):
+                print ('truing to build menu from flameMenuNewBatch')
                 app_menu = app.build_menu()
+                pprint (app_menu)
                 if app_menu:
                     menu.append(app_menu)
 
