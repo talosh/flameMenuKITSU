@@ -2599,6 +2599,7 @@ class flameMenuNewBatch(flameMenuApp):
             menu_item['name'] = '- [ Assets ] [+]'
             menu_item['order'] = menu_item_order
             menu_item_order += 1
+            menu_item['separator'] = 'above'
             menu_item['execute'] = self.create_asset_dialog
             menu_item['waitCursor'] = False
             menu_main_body.append(menu_item)
@@ -2617,6 +2618,7 @@ class flameMenuNewBatch(flameMenuApp):
                 menu_item['name'] = '- [ Assets ] [+]'
                 menu_item['order'] = menu_item_order
                 menu_item_order += 1
+                menu_item['separator'] = 'above'
                 menu_item['execute'] = self.create_asset_dialog
                 menu_item['waitCursor'] = False
                 menu_main_body.append(menu_item)
