@@ -813,7 +813,7 @@ class flameKitsuConnector(object):
 
             projects_by_id = {x.get('id'):x for x in self.pipeline_data['active_projects']}
             current_project = projects_by_id.get(self.linked_project_id)
-
+            
             self.collect_pipeline_data(current_project=current_project, current_client=shortloop_gazu_client)
 
             self.gazu.log_out(client = shortloop_gazu_client)
@@ -873,6 +873,7 @@ class flameKitsuConnector(object):
             self.log(pformat(e))
 
         try:
+            '''
             assets_with_modified_code = []
             all_assets_for_project = self.gazu.asset.all_assets_for_project(current_project, client=current_client)
             for asset in all_assets_for_project:
@@ -884,7 +885,8 @@ class flameKitsuConnector(object):
                         if code:
                             asset['code'] = code
                 assets_with_modified_code.append(asset)
-            self.pipeline_data['all_assets_for_project'] = assets_with_modified_code
+            '''
+            self.pipeline_data['all_assets_for_project'] = self.gazu.asset.all_assets_for_project(current_project, client=current_client)
         except Exception as e:
             self.log(pformat(e))
             self.pipeline_data['all_assets_for_project'] = []
@@ -901,8 +903,7 @@ class flameKitsuConnector(object):
                         if code:
                             shot['code'] = code
                 shots_with_modified_code.append(shot)
-            self.pipeline_data['all_shots_for_project'] = shots_with_modified_code
-
+            self.pipeline_data['all_shots_for_project'] = list(shots_with_modified_code)
         except Exception as e:
             self.log(pformat(e))
             self.pipeline_data['all_shots_for_project'] = []
@@ -3582,8 +3583,6 @@ def get_media_panel_custom_ui_actions():
         selection = flame.media_panel.selected_entries
     except Exception as e:
         pprint(e)
-
-    pprint (apps)
 
     for app in apps:
         if app.__class__.__name__ == 'flameMenuNewBatch':
