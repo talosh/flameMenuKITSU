@@ -3504,7 +3504,6 @@ class flameMenuPublisher(flameMenuApp):
 
     def create_uid(self):
         import uuid
-
         uid = ((str(uuid.uuid1()).replace('-', '')).upper())
         return uid[:4]
 
@@ -3518,9 +3517,9 @@ class flameMenuPublisher(flameMenuApp):
         return visibility
 
     def build_menu(self):
-        if not self.connector.sg_user:
+        if not self.connector.user:
             return None
-        if not self.connector.sg_linked_project_id:
+        if not self.connector.linked_project_id:
             return None
 
         batch_name = self.flame.batch.name.get_value()
@@ -3575,17 +3574,19 @@ class flameMenuPublisher(flameMenuApp):
 
         menus = []
 
+        '''
         add_remove_menu = self.build_addremove_menu()
         # for action in add_remove_menu['actions']:
         #     action['isVisible'] = self.scope_clip
         menus.append(add_remove_menu)
-
+        
         for entity in add_menu_list:
             publish_menu = self.build_publish_menu(entity)
             if publish_menu:
                 # for action in publish_menu['actions']:
                 #     action['isVisible'] = self.scope_clip
                 menus.append(publish_menu)
+        '''
 
         return menus
 
@@ -3995,7 +3996,7 @@ class flameMenuPublisher(flameMenuApp):
         versions_failed = set()
         pb_published = dict()
         pb_failed = dict()
-        print ('line 5795')
+
         for clip in selection:
             pb_info, is_cancelled = self.publish_clip(clip, entity, project_path, export_preset_fields)
 
@@ -5199,9 +5200,6 @@ class flameMenuPublisher(flameMenuApp):
 
     def page_bkw(self, *args, **kwargs):
         self.prefs['current_page'] = max(self.prefs['current_page'] - 1, 0)
-
-    def refresh(self, *args, **kwargs):
-        pass
 
     def create_export_presets(self):
 
