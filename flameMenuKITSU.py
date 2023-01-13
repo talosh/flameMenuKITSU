@@ -3523,19 +3523,14 @@ class flameMenuPublisher(flameMenuApp):
             return None
 
         batch_name = self.flame.batch.name.get_value()
-        tasks = []
+        entities_by_id = {}
+        all_shots = self.connector.pipeline_data.get('all_shots_for_project')
+        all_assets = self.connector.pipeline_data.get('all_assets_for_project')
 
-        '''
-        cached_tasks = self.connector.cache_retrive_result('current_tasks')
-
-        if not isinstance(cached_tasks, list):
-            return []
-
-        for cached_task in cached_tasks:
-            if not cached_task.get('entity'):
-                continue
-            tasks.append(cached_task)
-        entities_id_list = [task.get('entity').get('id') for task in tasks]
+        for shot in all_shots:
+            entities_by_id[shot.get('id')] = shot
+        for asset in all_assets:
+            entities_by_id[asset.get('id')] = asset
         
         add_menu_list = []
 
@@ -3545,35 +3540,28 @@ class flameMenuPublisher(flameMenuApp):
             for index, stored_entity in enumerate(add_menu_list):
                 stored_entity_type = stored_entity.get('type', 'Shot')
                 stored_entity_id = stored_entity.get('id', 0)
-                if not stored_entity_id in entities_id_list:
+                if not stored_entity_id in entities_by_id.keys():
                     add_menu_list.pop(index)
             
-            if not add_menu_list:                                
+            if not add_menu_list:
                 entity = {}
-                for task in tasks:
-                    current_entity = task.get('entity')
-                    if current_entity:
-                        if current_entity.get('name') == batch_name:
+                for current_entity in entities_by_id.values():
+                    if current_entity.get('code') == batch_name:
                             entity = current_entity
                             break
                 if entity:
                     self.update_loader_list(entity)
                 add_menu_list = self.prefs.get('additional menu ' + batch_name)
-
         else:
             self.prefs['additional menu ' + batch_name] = []
 
             entity = {}
-            for task in tasks:
-                current_entity = task.get('entity')
-                if current_entity:
-                    if current_entity.get('name') == batch_name:
+            for current_entity in entities_by_id.values():
+                if current_entity.get('code') == batch_name:
                         entity = current_entity
-                        break
             if entity:
                 self.update_loader_list(entity)
             add_menu_list = self.prefs.get('additional menu ' + batch_name)
-        '''
 
         menus = []
 
