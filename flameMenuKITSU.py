@@ -3524,6 +3524,8 @@ class flameMenuPublisher(flameMenuApp):
 
         batch_name = self.flame.batch.name.get_value()
         tasks = []
+
+        '''
         cached_tasks = self.connector.cache_retrive_result('current_tasks')
 
         if not isinstance(cached_tasks, list):
@@ -3571,6 +3573,7 @@ class flameMenuPublisher(flameMenuApp):
             if entity:
                 self.update_loader_list(entity)
             add_menu_list = self.prefs.get('additional menu ' + batch_name)
+        '''
 
         menus = []
 
