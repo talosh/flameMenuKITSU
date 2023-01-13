@@ -3449,6 +3449,2150 @@ class flameMenuNewBatch(flameMenuApp):
             self.log_debug('Rescan Python Hooks')
 
 
+class flameMenuPublisher(flameMenuApp):
+    def __init__(self, framework, connector):
+        flameMenuApp.__init__(self, framework)
+        self.connector = connector
+
+        # app defaults
+        if not self.prefs.master.get(self.name):
+            self.prefs['show_all'] = True
+            self.prefs['current_page'] = 0
+            self.prefs['menu_max_items_per_page'] = 128
+            self.prefs['templates'] = default_templates
+
+            # init values from default
+            '''
+            for entity_type in self.prefs['templates'].keys():
+                for template in self.prefs['templates'][entity_type].keys():
+                    if isinstance(self.prefs['templates'][entity_type][template], dict):
+                        if 'default' in self.prefs['templates'][entity_type][template].keys():
+                            self.prefs['templates'][entity_type][template]['value'] = self.prefs['templates'][entity_type][template]['default']
+            '''
+         
+            self.prefs['flame_export_presets'] = default_flame_export_presets
+            self.prefs['poster_frame'] = 1
+            self.prefs['version_zero'] = False
+
+        if not self.prefs_global.master.get(self.name):
+            self.prefs_global['temp_files_list'] = []
+
+        self.selected_clips = []
+        self.create_export_presets()
+        self.progress = self.publish_progress_dialog()
+        
+    def __getattr__(self, name):
+        def method(*args, **kwargs):
+            entity = self.dynamic_menu_data.get(name)
+            if entity:
+                if entity.get('caller') == 'build_addremove_menu':
+                    self.show_bug_message()
+                    self.update_loader_list(entity)
+                elif entity.get('caller') == 'flip_assigned_for_entity':
+                    self.show_bug_message()
+                    self.flip_assigned_for_entity(entity)
+                elif entity.get('caller') == 'fold_step_entity':
+                    self.fold_step_entity(entity)
+                elif entity.get('caller') == 'fold_task_entity':
+                    self.fold_task_entity(entity)
+                elif entity.get('caller') == 'publish':
+                    self.publish(entity, args[0])
+                    self.connector.bootstrap_toolkit()
+            self.rescan()
+            self.progress.hide()
+        return method
+
+    def create_uid(self):
+        import uuid
+
+        uid = ((str(uuid.uuid1()).replace('-', '')).upper())
+        return uid[:4]
+
+    def scope_clip(self, selection):
+        selected_clips = []
+        visibility = False
+        for item in selection:
+            if isinstance(item, (self.flame.PyClip)):
+                selected_clips.append(item)
+                visibility = True
+        return visibility
+
+    def build_menu(self):
+        if not self.connector.sg_user:
+            return None
+        if not self.connector.sg_linked_project_id:
+            return None
+
+        batch_name = self.flame.batch.name.get_value()
+        tasks = []
+        cached_tasks = self.connector.cache_retrive_result('current_tasks')
+
+        if not isinstance(cached_tasks, list):
+            return []
+
+        for cached_task in cached_tasks:
+            if not cached_task.get('entity'):
+                continue
+            tasks.append(cached_task)
+        entities_id_list = [task.get('entity').get('id') for task in tasks]
+        
+        add_menu_list = []
+
+        if (('additional menu ' + batch_name) in self.prefs.keys()) and self.prefs.get('additional menu ' + batch_name):
+            add_menu_list = self.prefs.get('additional menu ' + batch_name)
+
+            for index, stored_entity in enumerate(add_menu_list):
+                stored_entity_type = stored_entity.get('type', 'Shot')
+                stored_entity_id = stored_entity.get('id', 0)
+                if not stored_entity_id in entities_id_list:
+                    add_menu_list.pop(index)
+            
+            if not add_menu_list:                                
+                entity = {}
+                for task in tasks:
+                    current_entity = task.get('entity')
+                    if current_entity:
+                        if current_entity.get('name') == batch_name:
+                            entity = current_entity
+                            break
+                if entity:
+                    self.update_loader_list(entity)
+                add_menu_list = self.prefs.get('additional menu ' + batch_name)
+
+        else:
+            self.prefs['additional menu ' + batch_name] = []
+
+            entity = {}
+            for task in tasks:
+                current_entity = task.get('entity')
+                if current_entity:
+                    if current_entity.get('name') == batch_name:
+                        entity = current_entity
+                        break
+            if entity:
+                self.update_loader_list(entity)
+            add_menu_list = self.prefs.get('additional menu ' + batch_name)
+
+        menus = []
+
+        add_remove_menu = self.build_addremove_menu()
+        # for action in add_remove_menu['actions']:
+        #     action['isVisible'] = self.scope_clip
+        menus.append(add_remove_menu)
+
+        for entity in add_menu_list:
+            publish_menu = self.build_publish_menu(entity)
+            if publish_menu:
+                # for action in publish_menu['actions']:
+                #     action['isVisible'] = self.scope_clip
+                menus.append(publish_menu)
+
+        return menus
+
+    def build_addremove_menu(self):
+        if not self.connector.sg_user:
+            return None
+        if not self.connector.sg_linked_project:
+            return None
+
+        flame_project_name = self.flame.project.current_project.name
+        batch_name = self.flame.batch.name.get_value()
+        entities_to_mark = []
+        add_menu_list = self.prefs.get('additional menu ' + batch_name)
+        for item in add_menu_list:
+            entities_to_mark.append(item.get('id'))
+
+        menu = {'actions': []}
+        menu['name'] = self.menu_group_name + ' Add/Remove'
+
+        menu_item = {}
+        menu_item['name'] = '~ Rescan'
+        menu_item['execute'] = self.rescan
+        menu['actions'].append(menu_item)
+
+        menu_item = {}
+        if self.prefs['show_all']:            
+            menu_item['name'] = '~ Show Assigned Only'
+        else:
+            menu_item['name'] = '~ Show All'
+        menu_item['execute'] = self.flip_assigned
+        menu['actions'].append(menu_item)
+
+        user_only = not self.prefs['show_all']
+        filter_out = ['Project', 'Sequence']
+
+        found_entities = self.get_entities(user_only, filter_out)
+
+        if len(found_entities) == 0:
+            menu_item = {}
+            if self.prefs['show_all']:
+                menu_item['name'] = ' '*4 + 'No tasks found'
+            else:
+                menu_item['name'] = ' '*4 + 'No assigned tasks found'
+            menu_item['execute'] = self.rescan
+            menu_item['isEnabled'] = False
+            menu['actions'].append(menu_item)
+
+        menu_ctrls_len = len(menu)
+        menu_lenght = menu_ctrls_len
+        menu_lenght += len(found_entities.keys())
+        for entity_type in found_entities.keys():
+            menu_lenght += len(found_entities.get(entity_type))
+        max_menu_lenght = self.prefs.get('menu_max_items_per_page')
+
+        menu_main_body = []
+        for index, entity_type in enumerate(sorted(found_entities.keys())):
+            menu_item = {}
+            menu_item['name'] = '- [ ' + entity_type + 's ]'
+            menu_item['execute'] = self.rescan
+            menu_main_body.append(menu_item)
+            entities_by_name = {}
+            for entity in found_entities[entity_type]:
+                entities_by_name[entity.get('code')] = entity
+            for entity_name in sorted(entities_by_name.keys()):
+                entity = entities_by_name.get(entity_name)
+                menu_item = {}
+                if entity.get('id') in entities_to_mark:
+                    menu_item['name'] = '  * ' + entity.get('code')
+                else:
+                    menu_item['name'] = '     ' + entity.get('code')
+
+                entity['caller'] = inspect.currentframe().f_code.co_name
+                self.dynamic_menu_data[str(id(entity))] = entity
+                menu_item['execute'] = getattr(self, str(id(entity)))
+                menu_main_body.append(menu_item)
+
+        if menu_lenght < max_menu_lenght:
+        # controls and entites fits within menu size
+        # we do not need additional page switch controls
+            for menu_item in menu_main_body:
+                menu['actions'].append(menu_item)
+
+        else:
+            # round up number of pages and get current page
+            num_of_pages = ((menu_lenght) + max_menu_lenght - 1) // max_menu_lenght
+            curr_page = self.prefs.get('current_page')
+            
+            # decorate top with move backward control
+            # if we're not on the first page
+            if curr_page > 0:
+                menu_item = {}
+                menu_item['name'] = '<<[ prev page ' + str(curr_page) + ' of ' + str(num_of_pages) + ' ]'
+                menu_item['execute'] = self.page_bkw
+                menu['actions'].append(menu_item)
+
+            # calculate the start and end position of a window
+            # and append items to the list
+            menu_used_space = menu_ctrls_len + 2 # two more controls for page flip
+            window_size = max_menu_lenght - menu_used_space
+            start_index = window_size*curr_page + min(1*curr_page, 1)
+            end_index = window_size*curr_page+window_size + ((curr_page+1) // num_of_pages)
+
+            for menu_item in menu_main_body[start_index:end_index]:
+                menu['actions'].append(menu_item)
+            
+            # decorate bottom with move forward control
+            # if we're not on the last page            
+            if curr_page < (num_of_pages - 1):
+                menu_item = {}
+                menu_item['name'] = '[ next page ' + str(curr_page+2) + ' of ' + str(num_of_pages) + ' ]>>'
+                menu_item['execute'] = self.page_fwd
+                menu['actions'].append(menu_item)
+
+        return menu
+
+    def build_publish_menu(self, entity):
+        if not entity.get('code'):
+            entity['code'] = entity.get('name', 'no_name')
+        
+        entity_type = entity.get('type')
+        entity_id = entity.get('id')
+        entity_key = (entity_type, entity_id)
+        if entity_key not in self.prefs.keys():
+            self.prefs[entity_key] = {}
+            self.prefs[entity_key]['show_all'] = True
+
+        cached_tasks_query = self.connector.async_cache.get('current_tasks')
+        cached_tasks_by_entity = cached_tasks_query.get('by_entity') if cached_tasks_query else False
+        tasks = cached_tasks_by_entity.get(entity_key, []) if cached_tasks_by_entity else []
+
+        cached_versions_query = self.connector.async_cache.get('current_versions')
+        cached_versions_by_entity = cached_versions_query.get('by_entity') if cached_versions_query else False
+        versions = cached_versions_by_entity.get(entity_key, []) if cached_versions_by_entity else []
+
+        cached_pbfiles_query = self.connector.async_cache.get('current_pbfiles')
+        cached_pbfiles_by_entity = cached_pbfiles_query.get('by_entity') if cached_pbfiles_query else False
+        pbfiles = cached_pbfiles_by_entity.get(entity_key, []) if cached_pbfiles_by_entity else []
+
+        if not self.connector.sg_human_user:
+            human_user = {'id': 0}
+        else:
+            human_user = self.connector.sg_human_user
+
+        menu = {}
+        menu['name'] = self.menu_group_name + ' Publish ' + entity.get('code') + ':'
+        menu['actions'] = []
+
+        menu_item = {}
+        menu_item['name'] = '~ Rescan'
+        menu_item['execute'] = self.rescan
+        menu['actions'].append(menu_item)
+
+        menu_item = {}        
+        show_all_entity = dict(entity)
+        show_all_entity['caller'] = 'flip_assigned_for_entity'
+
+        if self.prefs[entity_key]['show_all']:            
+            menu_item['name'] = '~ Show Assigned Only'
+        else:
+            menu_item['name'] = '~ Show All Tasks'
+
+        self.dynamic_menu_data[str(id(show_all_entity))] = show_all_entity
+        menu_item['execute'] = getattr(self, str(id(show_all_entity)))
+        menu['actions'].append(menu_item)
+
+        tasks_by_step = {}
+        for task in tasks:
+            task_assignees = task.get('task_assignees')
+            user_ids = []
+            if task_assignees:
+                for user in task_assignees:
+                    user_ids.append(user.get('id'))
+            if not self.prefs[entity_key]['show_all']:
+                if human_user.get('id') not in user_ids:
+                    continue
+
+            step_name = task.get('step.Step.code')
+            if not step_name:
+                step_name = ''
+            step_id = task.get('step.Step.id')
+
+            if step_name not in tasks_by_step.keys():
+                tasks_by_step[step_name] = []
+            tasks_by_step[step_name].append(task)
+        
+        if len(tasks_by_step.values()) == 0:
+            menu_item = {}
+            if self.prefs[entity_key]['show_all']:
+                menu_item['name'] = ' '*4 + 'No tasks found'
+            else:
+                menu_item['name'] = ' '*4 + 'No assigned tasks found'
+            menu_item['execute'] = self.rescan
+            menu_item['isEnabled'] = False
+            menu['actions'].append(menu_item)            
+
+        current_steps = self.connector.async_cache.get('current_steps').get('result', dict()).values()
+        entity_steps = [x for x in current_steps if x.get('entity_type') == entity_type]
+        entity_steps_by_code = {step.get('code'):step for step in entity_steps}
+        current_step_names = tasks_by_step.keys()
+        current_step_order = []
+        for step in current_step_names:
+            current_step_order.append(entity_steps_by_code.get(step, dict()).get('list_order'))
+
+        for step_name in (x for _, x in sorted(zip(current_step_order, current_step_names))):
+            step_key = ('Step', step_name)
+            
+            if step_key not in self.prefs[entity_key].keys():
+                self.prefs[entity_key][step_key] = {'isFolded': False}
+
+            fold_step_entity = dict(entity)
+            fold_step_entity['caller'] = 'fold_step_entity'
+            fold_step_entity['key'] = step_key
+            self.dynamic_menu_data[str(id(fold_step_entity))] = fold_step_entity
+
+            menu_item = {}
+            menu_item['execute'] = getattr(self, str(id(fold_step_entity)))
+
+            if self.prefs[entity_key][step_key].get('isFolded') and len(tasks_by_step[step_name]) != 1:
+                menu_item['name'] = '+ [ ' + step_name + ' ]'
+                menu['actions'].append(menu_item)
+                continue
+            elif self.prefs[entity_key][step_key].get('isFolded') and tasks_by_step[step_name][0].get('content') != step_name:
+                menu_item['name'] = '+ [ ' + step_name + ' ]'
+                menu['actions'].append(menu_item)
+                continue
+
+            if len(tasks_by_step[step_name]) != 1:
+                menu_item['name'] = '- [ ' + step_name + ' ]'
+                menu['actions'].append(menu_item)
+            elif tasks_by_step[step_name][0].get('content') != step_name:
+                menu_item['name'] = '- [ ' + step_name + ' ]'
+                menu['actions'].append(menu_item)
+
+            for task in tasks_by_step[step_name]:
+                task_key = ('Task', task.get('id'))
+                if task_key not in self.prefs[entity_key].keys():
+                    self.prefs[entity_key][task_key] = {'isFolded': False}
+                
+                fold_task_entity = dict(entity)
+                fold_task_entity['caller'] = 'fold_task_entity'
+                fold_task_entity['key'] = task_key
+                self.dynamic_menu_data[str(id(fold_task_entity))] = fold_task_entity
+
+                # fill in template fields from task
+                task_Sequence = task.get('entity.Shot.sg_sequence', {})
+                task_Sequence_name = task_Sequence.get('name')
+                task_Shot = entity.get('code')
+                task_Asset = entity.get('code')
+                task_sg_Asset_type = task.get('entity.Asset.sg_asset_type')
+                task_Step = task.get('step.Step.code')
+                task_Step_code = task.get('step.Step.short_name')
+                
+                task_name = task.get('content')
+                menu_item = {}
+                if (task_name == step_name) and (len(tasks_by_step[step_name]) == 1):
+                    if self.prefs[entity_key][task_key].get('isFolded'):
+                        menu_item['name'] = '+ [ ' + task_name + ' ]'
+                    else:
+                        menu_item['name'] = '- [ ' + task_name + ' ]'
+                else:
+                    if self.prefs[entity_key][task_key].get('isFolded'):
+                        menu_item['name'] = ' '*4 + '+ [ ' + task_name + ' ]'
+                    else:
+                        menu_item['name'] = ' '*4 + '- [ ' + task_name + ' ]'
+                menu_item['execute'] = getattr(self, str(id(fold_task_entity)))
+                menu['actions'].append(menu_item)
+                if self.prefs[entity_key][task_key].get('isFolded'): continue
+
+                task_id = task.get('id')
+
+                task_versions = []
+                task_pbfiles = []
+
+                for v in versions:
+                    if task_id == v.get('sg_task.Task.id'):
+                        task_versions.append(v)
+                for p in pbfiles:
+                    if task_id == p.get('task.Task.id'):
+                        task_pbfiles.append(p)
+
+                version_names = []
+                version_name_lenghts = set()
+                
+                if len(task_versions) < 2:
+                    for version in task_versions:
+                        version_names.append('* ' + version.get('code'))
+                else:
+                    
+                    # group Published Files by Published File Type id and name pair
+                    # find the latest Published File for that pair
+                    # get the set of ids for versions linked to Published Files
+
+                    pbfiles_version_ids = set()
+                    pbfile_type_id_name_group = {}
+                    pbfile_type_id_name_datetime = {}
+                    pbfile_type_id_name_count = {}
+
+                    for pbfile in task_pbfiles:
+                        
+                        pbfile_version_id = pbfile.get('version.Version.id')
+                        if pbfile_version_id: pbfiles_version_ids.add(pbfile_version_id)
+                        
+                        pbfile_id = 0
+                        pbfile_type = pbfile.get('published_file_type')
+                        if isinstance(pbfile_type, dict):
+                            pbfile_id = pbfile_type.get('id')
+                        pbfile_name = pbfile.get('name')
+                        pbfile_created_at = pbfile.get('created_at')
+                        pbfile_type_id_name_key = (pbfile_id, pbfile_name)
+                        if pbfile_type_id_name_key not in pbfile_type_id_name_group.keys():
+                            pbfile_type_id_name_group[pbfile_type_id_name_key] = pbfile
+                            pbfile_type_id_name_datetime[pbfile_type_id_name_key] = pbfile_created_at
+                            pbfile_type_id_name_count[pbfile_type_id_name_key] = 1
+                        else:
+                            if pbfile_created_at > pbfile_type_id_name_datetime.get(pbfile_type_id_name_key):
+                                pbfile_type_id_name_group[pbfile_type_id_name_key] = pbfile
+                                pbfile_type_id_name_datetime[pbfile_type_id_name_key] = pbfile_created_at
+                                pbfile_type_id_name_count[pbfile_type_id_name_key] += 1
+
+                    version_names_set = set()
+                    
+                    # collect 'loose' versions vithout published files into separate list
+                    # and add them to version names
+                    loose_versions = []
+                    for version in task_versions:
+                        if version.get('id') not in pbfiles_version_ids:
+                            loose_versions.append(version)
+                                                            
+                    if len(loose_versions) > 3:
+                        first = loose_versions[0].get('code')
+                        last = loose_versions[-1].get('code')
+                        version_names.append(' '*3 + first)
+                        version_names.append(' '*8 + ' '*(max(len(first), len(last))//2 - 4) + '. . . . .')
+                        version_names.append(' '*3 + last)
+                    else:
+                        for loose_version in loose_versions:
+                            version_names.append(' '*3 + loose_version.get('code'))
+
+                    for key in pbfile_type_id_name_group.keys():
+                        pbfile = pbfile_type_id_name_group.get(key)
+                        if pbfile.get('version.Version.code'):
+                            version_names_set.add(pbfile.get('version.Version.code'))
+
+                    for name in sorted(version_names_set):
+                        version_names.append('* ' + name)
+
+                for version_name in version_names:
+                    menu_item = {}
+                    menu_item['name'] = ' '*8 + version_name
+                    menu_item['execute'] = self.rescan
+                    menu_item['isEnabled'] = False
+                    menu['actions'].append(menu_item)
+                
+                menu_item = {}
+                menu_item['name'] = ' '*12 + 'publish to task "' + task_name + '"'
+                publish_entity = {}
+                publish_entity['caller'] = 'publish'
+                publish_entity['task'] = task
+                self.dynamic_menu_data[str(id(publish_entity))] = publish_entity
+                menu_item['execute'] = getattr(self, str(id(publish_entity)))
+                menu_item['waitCursor'] = False
+                menu['actions'].append(menu_item)
+                
+        return menu
+
+    def publish(self, entity, selection):
+        
+        # Main publishing function
+
+        # temporary move built-in integration out of the way
+        # we may not need by passing the empty set of hooks
+        # self.connector.destroy_toolkit_engine()
+        
+        # First,let's check if the project folder is there
+        # and if not - try to create one
+        # connector takes care of storage root check and selection
+        # we're going to get empty path if connector was not able to resolve it
+
+        project_path = self.connector.resolve_project_path()
+
+        if not project_path:
+        #    message = 'Publishing stopped: Unable to resolve project path.'
+        #    self.mbox.setText(message)
+        #    self.mbox.exec_()
+            return False
+
+        # check if the project path is there and try to create if not
+
+        if not os.path.isdir(project_path):
+            try:
+                os.makedirs(project_path)
+            except Exception as e:
+                message = 'Publishing stopped: Unable to create project folder %s, reason: %s' % (project_path, e)
+                self.mbox.setText(message)
+                self.mbox.exec_()
+                return False
+
+        # get necessary fields from currently selected export preset
+
+        export_preset_fields = self.get_export_preset_fields(self.prefs['flame_export_presets'].get('Publish'))
+        if not export_preset_fields:
+            return False
+
+        # try to publish each of selected clips
+        
+        versions_published = set()
+        versions_failed = set()
+        pb_published = dict()
+        pb_failed = dict()
+        print ('line 5795')
+        for clip in selection:
+            pb_info, is_cancelled = self.publish_clip(clip, entity, project_path, export_preset_fields)
+
+            if not pb_info:
+                continue
+        
+            if pb_info.get('status', False):
+                version_name = pb_info.get('version_name')
+                versions_published.add(version_name)
+                data = pb_published.get(version_name, [])
+                data.append(pb_info)
+                pb_published[version_name] = data
+            else:
+                version_name = pb_info.get('version_name')
+                versions_failed.add(version_name)
+                data = pb_failed.get(version_name, [])
+                data.append(pb_info)
+                pb_failed[version_name] = data
+            if is_cancelled:
+                break
+
+        # report user of the status
+        
+        if is_cancelled and (len(versions_published) == 0):
+            return False
+        elif (len(versions_published) == 0) and (len(versions_failed) > 0):
+            msg = 'Failed to publish into %s versions' % len(versions_failed)
+        elif (len(versions_published) > 0) and (len(versions_failed) == 0):
+            msg = 'Published %s version(s)' % len(versions_published)
+        else:
+            msg = 'Published %s version(s), %s version(s) failed' % (len(versions_published), len(versions_failed))
+
+        # We may not need it by passing empty set of hooks
+        # self.connector.bootstrap_toolkit()
+
+        mbox = self.mbox
+        mbox.setText('flameMenuSG: ' + msg)
+
+        detailed_msg = ''
+
+        if len(versions_published) > 0:
+            detailed_msg += 'Published:\n'
+            for version_name in sorted(pb_published.keys()):
+                pb_info_list = pb_published.get(version_name)
+                for pb_info in pb_info_list:
+                    detailed_msg += ' '*4 + pb_info.get('version_name') + ':\n'
+                    if pb_info.get('flame_render', {}).get('flame_path'):
+                        path = pb_info.get('flame_render', {}).get('flame_path')
+                    else:
+                        path = pb_info.get('flame_render', {}).get('path_cache')
+                    detailed_msg += ' '*8 + os.path.basename(path) + '\n'
+                    path_cache = pb_info.get('flame_batch', {}).get('path_cache')
+                    detailed_msg += ' '*8 + os.path.basename(path_cache) + '\n'
+        if len(versions_failed) > 0:
+            detailed_msg += 'Failed to publish: \n'
+            for version_name in sorted(pb_failed.keys()):
+                pb_info_list = pb_failed.get(version_name)
+                for pb_info in pb_info_list:
+                    detailed_msg += ' '*4 + pb_info.get('flame_clip_name') + ':\n'
+        mbox.setDetailedText(detailed_msg)
+        mbox.setStyleSheet('QLabel{min-width: 500px;}')
+        mbox.exec_()
+
+        
+        return True
+
+    def publish_clip(self, clip, entity, project_path, preset_fields):
+
+        # Publishes the clip and returns published files info and status
+        
+        # Each flame clip publish will create primary publish, and batch file.
+        # there could be potentially secondary published defined in the future.
+        # the function will return the dictionary with information on that publishes
+        # to be presented to user, as well as is_cancelled flag.
+        # If there's an error and current publish should be stopped that gives
+        # user the possibility to stop other selected clips from being published
+        # returns: (dict)pb_info , (bool)is_cancelled
+
+        # dictionary that holds information about publish
+        # publish_clip will return the list of info dicts
+        # along with the status. It is purely to be able
+        # to inform user of the status after we processed multpile clips
+
+        from PySide2 import QtWidgets
+
+        pb_info = {
+            'flame_clip_name': clip.name.get_value(),        # name of the clip selected in flame
+            'version_name': '',     # name of a version in shotgun
+            'flame_render': {       # 'flame_render' related data
+                'path_cache': '',
+                'pb_file_name': ''
+            },
+            'flame_batch': {        # 'flame_batch' related data
+                'path_cache': '',
+                'pb_file_name': ''
+            },
+            'status': False         # status of the flame clip publish
+        }
+
+        # Process info we've got from entity
+
+        self.log_debug('Starting publish_clip for %s with entity:' % pb_info.get('flame_clip_name'))
+        self.log_debug('\n%s' % pformat(entity))
+
+        task = entity.get('task')
+        task_entity = task.get('entity')
+        task_entity_type = task_entity.get('type')
+        task_entity_name = task_entity.get('name')
+        task_entity_id = task_entity.get('id')
+        task_step = task.get('step.Step.code')
+        task_step_code = task.get('step.Step.short_name')
+        if not task_step_code:
+            task_step_code = task_step.upper()
+        sequence = task.get('entity.Shot.sg_sequence')
+        if not sequence:
+            sequence_name = 'NoSequence'
+        else:
+            sequence_name = sequence.get('name', 'NoSequence')
+        sg_asset_type = task.get('entity.Asset.sg_asset_type','NoType')
+        uid = self.create_uid()    
+        
+        # linked .batch file path resolution
+        # if the clip consists of several clips with different linked batch setups
+        # fall back to the current batch setup (should probably publish all of them?)
+
+        self.log_debug('looking for linked batch setup...')
+
+        import ast
+
+        linked_batch_path = None
+        comments = set()
+        for version in clip.versions:
+            for track in version.tracks:
+                for segment in track.segments:
+                    comments.add(segment.comment.get_value())
+        if len(comments) == 1:
+            comment = comments.pop()
+            start_index = comment.find("{'batch_file': ")
+            end_index = comment.find("'}", start_index)
+            if (start_index > 0) and (end_index > 0):
+                try:
+                    linked_batch_path_dict = ast.literal_eval(comment[start_index:end_index+2])
+                    linked_batch_path = linked_batch_path_dict.get('batch_file')
+                except:
+                    pass
+
+        self.log_debug('linked batch setup: %s' % linked_batch_path)
+
+        # basic name/version detection from clip name
+
+        self.log_debug('parsing clip name %s' % pb_info.get('flame_clip_name'))
+
+        batch_group_name = self.flame.batch.name.get_value()
+
+        clip_name = clip.name.get_value()
+        version_number = -1
+        version_padding = -1
+        if clip_name.startswith(batch_group_name):
+            clip_name = clip_name[len(batch_group_name):]
+        if len(clip_name) == 0:
+            clip_name = task_step_code.lower()
+
+        if clip_name[-1].isdigit():
+            match = re.split('(\d+)', clip_name)
+            try:
+                version_number = int(match[-2])
+            except:
+                pass
+
+            version_padding = len(match[-2])
+            clip_name = clip_name[: -version_padding]
+        
+        if clip_name.endswith('v'):
+            clip_name = clip_name[:-1] 
+        
+        if any([clip_name.startswith('_'), clip_name.startswith(' '), clip_name.startswith('.')]):
+            clip_name = clip_name[1:]
+        if any([clip_name.endswith('_'), clip_name.endswith(' '), clip_name.endswith('.')]):
+            clip_name = clip_name[:-1]
+
+        self.log_debug('parsed clip_name: %s' % clip_name)
+
+        if version_number == -1:
+            self.log_debug('can not parse version, looking for batch iterations')
+            version_number = len(self.flame.batch.batch_iterations) + 1
+            # if (version_number == 0) and (not self.prefs.get('version_zero', False)):
+            #    version_number = 1
+            version_padding = 3
+        
+        self.log_debug('version number: %s' % version_number)
+        self.log_debug('version_zero status: %s' % self.prefs.get('version_zero', False))
+
+        # collect known template fields
+
+        self.log_debug('preset fields: %s' % pformat(preset_fields))
+
+        if preset_fields.get('type') == 'movie':
+            sg_frame = ''
+        else:
+            sg_frame = '%' + '{:02d}'.format(preset_fields.get('framePadding')) + 'd'
+
+        template_fields = {}
+        template_fields['Shot'] = task_entity_name
+        template_fields['Asset'] = task_entity_name
+        template_fields['sg_asset_type'] = sg_asset_type
+        template_fields['name'] = clip_name
+        template_fields['Step'] = task_step
+        template_fields['Step_code'] = task_step_code
+        template_fields['Sequence'] = sequence_name
+        template_fields['version'] = '{:03d}'.format(version_number)
+        template_fields['version_four'] = '{:04d}'.format(version_number)
+        template_fields['ext'] = preset_fields.get('fileExt')
+        template_fields['frame'] = sg_frame
+
+        self.log_debug('template fields:')
+        self.log_debug('\n%s' % pformat(template_fields))
+
+        # compose version name from template
+        
+        version_name = self.prefs.get('templates', {}).get(task_entity_type, {}).get('version_name', {}).get('value', '')
+
+        self.log_debug('version name template: %s' % version_name)
+
+        version_name = version_name.format(**template_fields)
+        update_version_preview = True
+        update_version_thumbnail = True
+        pb_info['version_name'] = version_name
+
+        self.log_debug('resolved version name: %s' % version_name)  
+        
+        # 'flame_render'
+        # start with flame_render publish first.
+
+        self.log_debug('starting flame_render publish...') 
+
+        pb_file_name = task_entity_name + ', ' + clip_name
+
+        # compose export path anf path_cache filed from template fields
+
+        export_path = self.prefs.get('templates', {}).get(task_entity_type, {}).get('flame_render', {}).get('value', '')
+
+        self.log_debug('flame_render export preset: %s' % export_path)
+
+        export_path = export_path.format(**template_fields)
+        path_cache = export_path.format(**template_fields)
+        export_path = os.path.join(project_path, export_path)
+        path_cache = os.path.join(os.path.basename(project_path), path_cache)
+
+        if preset_fields.get('type') == 'movie':
+            export_path = export_path.replace('..', '.')
+            path_cache = path_cache.replace('..', '.')
+
+        self.log_debug('resolved export path: %s' % export_path)
+        self.log_debug('path_cache %s' % path_cache)
+
+        # get PublishedFileType from Shotgun
+        # if it is not there - create it
+        flame_render_type = self.prefs.get('templates', {}).get(task_entity_type, {}).get('flame_render', {}).get('PublishedFileType', '')
+        self.log_debug('PublishedFile type: %s, querying ShotGrid' % flame_render_type)
+        published_file_type = self.connector.sg.find_one('PublishedFileType', filters=[["code", "is", flame_render_type]])
+        self.log_debug('PublishedFile type: found: %s' % pformat(published_file_type))        
+        if not published_file_type:
+            self.log_debug('creating PublishedFile type %s' % flame_render_type)
+            published_file_type = self.connector.sg.create("PublishedFileType", {"code": flame_render_type})
+            self.log_debug('created: %s' % pformat(published_file_type))
+
+        # fill the pb_info data for 'flame_render'
+        pb_info['flame_render']['path_cache'] = path_cache
+        pb_info['flame_render']['pb_file_name'] = pb_file_name
+
+        # check if we're adding publishes to existing version
+
+        if self.connector.sg.find('Version', [
+            ['entity', 'is', task_entity], 
+            ['code', 'is', version_name],
+            ['sg_task', 'is', {'type': 'Task', 'id': task.get('id')}]
+            ]):
+
+            self.log_debug('found existing version with the same name')
+
+            # do not update version thumbnail and preview
+            update_version_preview = False
+            update_version_thumbnail = False
+
+            # if it is a case:
+            # check if we already have published file of the same sg_published_file_type
+            # and with the same name and path_cache
+
+            task_published_files = self.connector.sg.find(
+                'PublishedFile',
+                [['task', 'is', {'type': 'Task', 'id': task.get('id')}]],
+                ['published_file_type', 
+                'path_cache', 
+                'name',
+                'version_number']
+            )
+
+            sg_pbf_type_flag = False
+            path_cache_flag = False
+            name_flag = False
+            version_number_flag = False
+
+            for task_published_file in task_published_files:
+                if task_published_file.get('published_file_type', {}).get('id') == published_file_type.get('id'):
+                    sg_pbf_type_flag = True
+                if task_published_file.get('name') == pb_file_name:
+                    name_flag = True
+                if task_published_file.get('version_number') == version_number:
+                    version_number_flag = True
+                if task_published_file.get('path_cache') == path_cache:
+                    path_cache_flag = True
+
+            if sg_pbf_type_flag and path_cache_flag and name_flag and version_number:
+
+                # we don't need to move down to .batch file publishing.
+                
+                # inform user that published file already exists:
+                mbox = QtWidgets.QMessageBox()
+                mbox.setText('Publish for flame clip %s\nalready exists in ShotGrid version %s' % (pb_info.get('flame_clip_name', ''), pb_info.get('version_name', '')))
+                detailed_msg = ''
+                detailed_msg += 'Path: ' + os.path.join(project_path, pb_info.get('flame_render', {}).get('path_cache', ''))
+                mbox.setDetailedText(detailed_msg)
+                mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+                # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+                btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+                btn_Continue.setText('Continue')
+                mbox.exec_()
+
+                if mbox.clickedButton() == btn_Continue:
+                    return (pb_info, False)
+                else:
+                    return (pb_info, True)
+
+        # Export section
+
+        original_clip_name = clip.name.get_value()
+
+        # Try to export preview and thumbnail in background
+                
+        class BgExportHooks(object):
+            def preExport(self, info, userData, *args, **kwargs):
+                pass
+            def postExport(self, info, userData, *args, **kwargs):
+                pass
+            def preExportSequence(self, info, userData, *args, **kwargs):
+                pass
+            def postExportSequence(self, info, userData, *args, **kwargs):
+                pass
+            def preExportAsset(self, info, userData, *args, **kwargs):
+                pass
+            def postExportAsset(self, info, userData, *args, **kwargs):
+                del args, kwargs
+                pass
+            def exportOverwriteFile(self, path, *args, **kwargs):
+                del path, args, kwargs
+                return "overwrite"
+        
+        bg_exporter = self.flame.PyExporter()
+        bg_exporter.foreground = False
+
+        # Exporting previews in background 
+        # doesn'r really work with concurrent exports in FG
+        # Render queue just becomes cluttered with
+        # unneeded and unfinished exports
+
+        # Disabling preview bg export block at the moment
+        # But leaving thumbnail export
+        
+        # self.log_debug('sending preview to background export')
+        # preset_path = os.path.join(self.framework.prefs_folder, 'GeneratePreview.xml')
+        # clip.name.set_value(version_name + '_preview_' + uid)
+        export_dir = '/var/tmp'
+        preview_path = os.path.join(export_dir, version_name + '_preview_' + uid + '.mov')
+        # self.prefs_global['temp_files_list'].append(preview_path)
+
+        '''
+        self.log_debug('background exporting preview %s' % clip.name.get_value())
+        self.log_debug('with preset: %s' % preset_path)
+        self.log_debug('into folder: %s' % export_dir)
+
+        try:
+            bg_exporter.export(clip, preset_path, export_dir,  hooks=BgExportHooks())
+        except Exception as e:
+            self.log_debug('error exporting in background %s' % e)
+            pass
+        '''
+
+        preset_path = os.path.join(self.framework.prefs_folder, 'GenerateThumbnail.xml')
+        clip.name.set_value(version_name + '_thumbnail_' + uid)
+        export_dir = '/var/tmp'
+        thumbnail_path = os.path.join(export_dir, version_name + '_thumbnail_' + uid + '.jpg')
+        self.prefs_global['temp_files_list'].append(thumbnail_path)
+        clip_in_mark = clip.in_mark.get_value()
+        clip_out_mark = clip.out_mark.get_value()
+        clip.in_mark = self.prefs.get('poster_frame', 1)
+        clip.out_mark = self.prefs.get('poster_frame', 1) + 1
+        bg_exporter.export_between_marks = True
+
+        self.log_debug('background exporting thumbnail %s' % clip.name.get_value())
+        self.log_debug('with preset: %s' % preset_path)
+        self.log_debug('into folder: %s' % export_dir)
+        self.log_debug('poster frame: %s' % self.prefs.get('poster_frame', 1))
+
+        try:
+            bg_exporter.export(clip, preset_path, export_dir,  hooks=BgExportHooks())
+        except Exception as e:
+            self.log_debug('error exporting in background %s' % e)
+            pass
+
+        clip.in_mark.set_value(clip_in_mark)
+        clip.out_mark.set_value(clip_out_mark)
+        clip.name.set_value(original_clip_name)
+
+        # Export using main preset
+
+        self.log_debug('starting export form flame')
+
+        preset_path = preset_fields.get('path')
+
+        self.log_debug('export preset: %s' % preset_path)
+
+        class ExportHooks(object):
+            def preExport(self, info, userData, *args, **kwargs):
+                pass
+            def postExport(self, info, userData, *args, **kwargs):
+                pass
+            def preExportSequence(self, info, userData, *args, **kwargs):
+                pass
+            def postExportSequence(self, info, userData, *args, **kwargs):
+                pass
+            def preExportAsset(self, info, userData, *args, **kwargs):
+                pass
+            def postExportAsset(self, info, userData, *args, **kwargs):
+                del args, kwargs
+                pass
+            def exportOverwriteFile(self, path, *args, **kwargs):
+                del path, args, kwargs
+                return "overwrite"
+
+        exporter = self.flame.PyExporter()
+        exporter.foreground = True
+        export_clip_name, ext = os.path.splitext(os.path.basename(export_path))
+        export_clip_name = export_clip_name.replace(sg_frame, '')
+        if export_clip_name.endswith('.'):
+            export_clip_name = export_clip_name[:-1]
+        clip.name.set_value(str(export_clip_name))
+        export_dir = str(os.path.dirname(export_path))
+
+        if not os.path.isdir(export_dir):
+            self.log_debug('creating folders: %s' % export_dir)
+            try:
+                os.makedirs(export_dir)
+            except:
+                clip.name.set_value(original_clip_name)
+                mbox = QtWidgets.QMessageBox()
+                mbox.setText('Error publishing flame clip %s:\nunable to create destination folder.' % pb_info.get('flame_clip_name', ''))
+                mbox.setDetailedText('Path: ' + export_dir)
+                mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+                # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+                btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+                btn_Continue.setText('Continue')
+                mbox.exec_()
+                if mbox.clickedButton() == btn_Continue:
+                    return (pb_info, False)
+                else:
+                    return (pb_info, True)
+
+        self.log_debug('exporting clip %s' % clip.name.get_value())
+        self.log_debug('with preset: %s' % preset_path)
+        self.log_debug('into folder: %s' % export_dir)
+
+        try:
+            exporter.export(clip, preset_path, export_dir, hooks=ExportHooks())
+            clip.name.set_value(original_clip_name)
+        except Exception as e:
+            clip.name.set_value(original_clip_name)
+            mbox = QtWidgets.QMessageBox()
+            mbox.setText('Error publishing flame clip %s:\n%s.' % (pb_info.get('flame_clip_name', ''), e))
+            mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+            # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+            btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+            btn_Continue.setText('Continue')
+            mbox.exec_()
+            if mbox.clickedButton() == btn_Continue:
+                return (pb_info, False)
+            else:
+                return (pb_info, True)
+
+        if not (os.path.isfile(preview_path) and os.path.isfile(thumbnail_path)):
+            self.log_debug('no background previews ready, exporting in fg')
+            
+            # Export preview to temp folder
+
+            # preset_dir = self.flame.PyExporter.get_presets_dir(
+            #   self.flame.PyExporter.PresetVisibility.Shotgun,
+            #   self.flame.PyExporter.PresetType.Movie
+            # )
+            # preset_path = os.path.join(preset_dir, 'Generate Preview.xml')
+            preset_path = os.path.join(self.framework.prefs_folder, 'GeneratePreview.xml')
+            clip.name.set_value(version_name + '_preview_' + uid)
+            export_dir = '/var/tmp'
+            preview_path = os.path.join(export_dir, version_name + '_preview_' + uid + '.mov')
+
+            self.log_debug('exporting preview %s' % clip.name.get_value())
+            self.log_debug('with preset: %s' % preset_path)
+            self.log_debug('into folder: %s' % export_dir)
+
+            try:
+                exporter.export(clip, preset_path, export_dir,  hooks=ExportHooks())
+            except:
+                pass
+
+            # Set clip in and out marks and export thumbnail to temp folder
+
+            # preset_dir = self.flame.PyExporter.get_presets_dir(
+            #    self.flame.PyExporter.PresetVisibility.Shotgun,
+            #    self.flame.PyExporter.PresetType.Image_Sequence
+            # )
+            # preset_path = os.path.join(preset_dir, 'Generate Thumbnail.xml')
+            preset_path = os.path.join(self.framework.prefs_folder, 'GenerateThumbnail.xml')
+            clip.name.set_value(version_name + '_thumbnail_' + uid)
+            export_dir = '/var/tmp'
+            thumbnail_path = os.path.join(export_dir, version_name + '_thumbnail_' + uid + '.jpg')
+            clip_in_mark = clip.in_mark.get_value()
+            clip_out_mark = clip.out_mark.get_value()
+            clip.in_mark = self.prefs.get('poster_frame', 1)
+            clip.out_mark = self.prefs.get('poster_frame', 1) + 1
+            exporter.export_between_marks = True
+
+            self.log_debug('exporting thumbnail %s' % clip.name.get_value())
+            self.log_debug('with preset: %s' % preset_path)
+            self.log_debug('into folder: %s' % export_dir)
+            self.log_debug('poster frame: %s' % self.prefs.get('poster_frame', 1))
+
+            try:
+                exporter.export(clip, preset_path, export_dir,  hooks=ExportHooks())
+            except:
+                pass
+            
+            clip.in_mark.set_value(clip_in_mark)
+            clip.out_mark.set_value(clip_out_mark)
+            clip.name.set_value(original_clip_name)
+
+            # Create version in Shotgun
+
+        self.log_debug('creating version in ShotGrid')
+
+        self.progress.show()
+        self.progress.set_progress(version_name, 'Creating version...')
+
+        version_data = dict(
+            project = {'type': 'Project', 'id': self.connector.sg_linked_project_id},
+            code = version_name,
+            #description=item.description,
+            entity = task_entity,
+            sg_task = {'type': 'Task', 'id': task.get('id')},
+            #sg_path_to_frames=path
+        )
+        version = {}
+        try:
+            version = self.connector.sg.create('Version', version_data)
+            self.log_debug('created Version: \n%s' % pformat(version))
+        except Exception as e:
+            self.progress.hide()
+            mbox = QtWidgets.QMessageBox()
+            mbox.setText('Error creating published file in ShotGrid')
+            mbox.setDetailedText(pformat(e))
+            mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+            # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+            btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+            btn_Continue.setText('Continue')
+            mbox.exec_()
+            if mbox.clickedButton() == btn_Continue:
+                return (pb_info, False)
+            else:
+                return (pb_info, True)        
+
+        if os.path.isfile(thumbnail_path) and update_version_thumbnail:
+            self.log_debug('uploading thumbnail %s' % thumbnail_path)
+            self.progress.set_progress(version_name, 'Uploading thumbnail...')
+            try:
+                self.connector.sg.upload_thumbnail('Version', version.get('id'), thumbnail_path)
+            except Exception as e:
+                self.progress.hide()
+                mbox = QtWidgets.QMessageBox()
+                mbox.setText('Error uploading version thumbnail to ShotGrid')
+                mbox.setDetailedText(pformat(e))
+                mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+                # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+                btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+                btn_Continue.setText('Continue')
+                mbox.exec_()
+                if mbox.clickedButton() == btn_Continue:
+                    return (pb_info, False)
+                else:
+                    return (pb_info, True)
+
+        if os.path.isfile(preview_path) and update_version_preview:
+            self.log_debug('uploading preview %s' % preview_path)
+            self.progress.set_progress(version_name, 'Uploading preview...')
+            try:
+                self.connector.sg.upload('Version', version.get('id'), preview_path, 'sg_uploaded_movie')
+            except:
+                try:
+                    self.connector.sg.upload('Version', version.get('id'), preview_path, 'sg_uploaded_movie')
+                except Exception as e:
+                    self.progress.hide()
+                    mbox = QtWidgets.QMessageBox()
+                    mbox.setText('Error uploading version preview to ShotGrid')
+                    mbox.setDetailedText(pformat(e))
+                    mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+                    # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+                    btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+                    btn_Continue.setText('Continue')
+                    mbox.exec_()
+                    if mbox.clickedButton() == btn_Continue:
+                        return (pb_info, False)
+                    else:
+                        return (pb_info, True)
+
+        # Create 'flame_render' PublishedFile
+
+        self.log_debug('creating flame_render published file in ShotGrid')
+
+        published_file_data = dict(
+            project = {'type': 'Project', 'id': self.connector.sg_linked_project_id},
+            version_number = version_number,
+            task = {'type': 'Task', 'id': task.get('id')},
+            version = version,
+            entity = task_entity,
+            published_file_type = published_file_type,
+            path = {'relative_path': path_cache, 'local_storage': self.connector.sg_storage_root},
+            path_cache = path_cache,
+            code = os.path.basename(path_cache),
+            name = pb_file_name
+        )
+        self.progress.set_progress(version_name, 'Registering main publish files...')
+        try:
+            published_file = self.connector.sg.create('PublishedFile', published_file_data)
+        except Exception as e:
+            self.progress.hide()
+            mbox = QtWidgets.QMessageBox()
+            mbox.setText('Error creating published file in ShotGrid')
+            mbox.setDetailedText(pformat(e))
+            mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+            # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+            btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+            btn_Continue.setText('Continue')
+            mbox.exec_()
+            if mbox.clickedButton() == btn_Continue:
+                return (pb_info, False)
+            else:
+                return (pb_info, True)
+
+
+        self.log_debug('created PublishedFile:\n%s' % pformat(published_file))
+        self.log_debug('uploading thumbnail %s' % thumbnail_path)
+        self.progress.set_progress(version_name, 'Uploading main publish files thumbnail...')
+        try:
+            self.connector.sg.upload_thumbnail('PublishedFile', published_file.get('id'), thumbnail_path)
+        except:
+            try:
+                self.connector.sg.upload_thumbnail('PublishedFile', published_file.get('id'), thumbnail_path)
+            except Exception as e:
+                self.progress.hide()
+                mbox = QtWidgets.QMessageBox()
+                mbox.setText('Error uploading thumbnail to ShotGrid')
+                mbox.setDetailedText(pformat(e))
+                mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+                # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+                btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+                btn_Continue.setText('Continue')
+                mbox.exec_()
+                if mbox.clickedButton() == btn_Continue:
+                    return (pb_info, False)
+                else:
+                    return (pb_info, True)        
+
+        pb_info['status'] = True
+
+        # check what we've actually exported and get start and end frames from there
+        # this won't work for movie, so check the preset first
+        # this should be moved in a separate function later
+
+        self.log_debug('getting start and end frames from exported clip')
+        
+        flame_path = ''
+        flame_render_path_cache = pb_info.get('flame_render', {}).get('path_cache', '')
+        flame_render_export_dir = os.path.join(os.path.dirname(project_path), os.path.dirname(flame_render_path_cache))
+
+        if preset_fields.get('type', 'image') == 'image':
+            import fnmatch
+
+            try:
+                file_names = [f for f in os.listdir(flame_render_export_dir) if os.path.isfile(os.path.join(flame_render_export_dir, f))]
+            except:
+                file_names = []
+                                    
+            frame_pattern = re.compile(r"^(.+?)([0-9#]+|[%]0\dd)$")
+            root, ext = os.path.splitext(os.path.basename(flame_render_path_cache))
+            match = re.search(frame_pattern, root)
+            if match:
+                pattern = os.path.join("%s%s" % (re.sub(match.group(2), "*", root), ext))
+                files = list()
+                for file_name in file_names:
+                    if fnmatch.fnmatch(file_name, pattern):
+                        files.append(os.path.join(export_dir, file_name))
+                
+                if files:
+                    file_roots = [os.path.splitext(f)[0] for f in files]
+                    frame_padding = len(re.search(frame_pattern, file_roots[0]).group(2))
+                    offset = len(match.group(1))
+                    frames = list()
+                    for f in file_roots:
+                        try:
+                            frame = int(os.path.basename(f)[offset:offset+frame_padding])
+                        except:
+                            continue
+                        frames.append(frame)
+
+                    if frames:
+                        min_frame = min(frames)
+                        self.log_debug('start frame: %s' % min_frame)
+                        max_frame = max(frames)
+                        self.log_debug('end_frame %s' % min_frame)
+                        format_str = "[%%0%sd-%%0%sd]" % (frame_padding, frame_padding)
+                        frame_spec = format_str % (min_frame, max_frame)
+                        flame_file_name = "%s%s%s" % (match.group(1), frame_spec, ext)
+                        flame_path = os.path.join(export_dir, flame_file_name)
+
+                        self.connector.sg.update('Version', version.get('id'), {'sg_first_frame': min_frame, 'sg_last_frame': max_frame})
+
+            pb_info['flame_render']['flame_path'] = flame_path
+        
+        elif preset_fields.get('type', 'image') == 'movie':
+            pass
+            # placeholder for movie export
+
+        # publish .batch file
+        # compose batch export path and path_cache filed from template fields
+
+        self.log_debug('starting .batch file publish')
+
+        export_path = self.prefs.get('templates', {}).get(task_entity_type, {}).get('flame_batch', {}).get('value', '')
+        export_path = export_path.format(**template_fields)
+        path_cache = export_path.format(**template_fields)
+        export_path = os.path.join(project_path, export_path)
+        path_cache = os.path.join(os.path.basename(project_path), path_cache)
+
+        self.log_debug('resolved export path: %s' % export_path)
+        self.log_debug('path_cache %s' % path_cache)
+
+        pb_info['flame_batch']['path_cache'] = path_cache
+        pb_info['flame_batch']['pb_file_name'] = task_entity_name
+        
+        # copy flame .batch file linked to the clip or save current one if not resolved from comments
+
+        export_dir = os.path.dirname(export_path)
+        if not os.path.isdir(export_dir):
+            self.log_debug('creating folders: %s' % export_dir)
+            try:
+                os.makedirs(export_dir)
+            except:
+                clip.name.set_value(original_clip_name)
+                self.progress.hide()
+                mbox = QtWidgets.QMessageBox()
+                mbox.setText('Error publishing flame clip %s:\nunable to create destination .batch folder.' % pb_info.get('flame_clip_name', ''))
+                mbox.setDetailedText('Path: ' + export_dir)
+                mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+                # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+                btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+                btn_Continue.setText('Continue')
+                mbox.exec_()
+                if mbox.clickedButton() == btn_Continue:
+                    return (pb_info, False)
+                else:
+                    return (pb_info, True)
+
+        if linked_batch_path:
+
+            self.progress.set_progress(version_name, 'Copying linked batch...')
+
+            self.log_debug('copying linked .batch file')
+            self.log_debug('from %s' % linked_batch_path)
+            self.log_debug('to %s' % export_path)
+
+            src, ext = os.path.splitext(linked_batch_path)
+            dest, ext = os.path.splitext(export_path)
+            if os.path.isfile(linked_batch_path) and  os.path.isdir(src):
+                try:
+                    from subprocess import call
+                    call(['cp', '-a', src, dest])
+                    call(['cp', '-a', linked_batch_path, export_path])
+                except:
+                    self.progress.hide()
+                    mbox = QtWidgets.QMessageBox()
+                    mbox.setText('Error publishing flame clip %s:\nunable to copy flame batch.' % pb_info.get('flame_clip_name', ''))
+                    mbox.setDetailedText('Path: ' + export_path)
+                    mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+                    # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+                    btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+                    btn_Continue.setText('Continue')
+                    mbox.exec_()
+                    if mbox.clickedButton() == btn_Continue:
+                        return (pb_info, False)
+                    else:
+                        return (pb_info, True)
+            else:
+                self.log_debug('no linked .batch file found on filesystem')
+                self.log_debug('saving current batch to: %s' % export_path)
+                self.flame.batch.save_setup(str(export_path))
+        else:
+            self.log_debug('no linked .batch file')
+            self.log_debug('saving current batch to: %s' % export_path)
+            self.progress.set_progress(version_name, 'Saving current batch...')
+            self.flame.batch.save_setup(str(export_path))
+
+        # get published file type for Flame Batch or create a published file type on the fly
+
+        flame_batch_type = self.prefs.get('templates', {}).get(task_entity_type, {}).get('flame_batch', {}).get('PublishedFileType', '')
+        self.log_debug('PublishedFile type: %s, querying ShotGrid' % flame_batch_type)
+        published_file_type = self.connector.sg.find_one('PublishedFileType', filters=[["code", "is", flame_batch_type]])
+        self.log_debug('PublishedFile type: found: %s' % pformat(published_file_type))
+        if not published_file_type:
+            self.log_debug('creating PublishedFile type %s' % flame_render_type)
+            try:
+                published_file_type = self.connector.sg.create("PublishedFileType", {"code": flame_batch_type})
+            except Exception as e:
+                self.progress.hide()
+                mbox = QtWidgets.QMessageBox()
+                mbox.setText('Error creating published file type in ShotGrid')
+                mbox.setDetailedText(pformat(e))
+                mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+                # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+                btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+                btn_Continue.setText('Continue')
+                mbox.exec_()
+                if mbox.clickedButton() == btn_Continue:
+                    return (pb_info, False)
+                else:
+                    return (pb_info, True)
+
+            self.log_debug('created: %s' % pformat(published_file_type))
+
+        # update published file data and create PublishedFile for flame batch
+
+        self.log_debug('creating flame_batch published file in ShotGrid')
+
+        published_file_data['published_file_type'] = published_file_type
+        published_file_data['path'] =  {'relative_path': path_cache, 'local_storage': self.connector.sg_storage_root}
+        published_file_data['path_cache'] = path_cache
+        published_file_data['code'] = os.path.basename(path_cache)
+        published_file_data['name'] = task_entity_name
+
+        self.progress.set_progress(version_name, 'Registering batch...')
+
+        try:
+            published_file = self.connector.sg.create('PublishedFile', published_file_data)
+        except Exception as e:
+            self.progress.hide()
+            mbox = QtWidgets.QMessageBox()
+            mbox.setText('Error creating published file in ShotGrid')
+            mbox.setDetailedText(pformat(e))
+            mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+            # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+            btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+            btn_Continue.setText('Continue')
+            mbox.exec_()
+            if mbox.clickedButton() == btn_Continue:
+                return (pb_info, False)
+            else:
+                return (pb_info, True)
+        
+        self.log_debug('created PublishedFile:\n%s' % pformat(published_file))
+        self.log_debug('uploading thumbnail %s' % thumbnail_path)
+        
+        self.progress.set_progress(version_name, 'Uploading batch thumbnail...')
+
+        try:
+            self.connector.sg.upload_thumbnail('PublishedFile', published_file.get('id'), thumbnail_path)
+        except:
+            try:
+                self.connector.sg.upload_thumbnail('PublishedFile', published_file.get('id'), thumbnail_path)
+            except Exception as e:
+                self.progress.hide()
+                mbox = QtWidgets.QMessageBox()
+                mbox.setText('Error uploading thumbnail to ShotGrid')
+                mbox.setDetailedText(pformat(e))
+                mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
+                # mbox.setStyleSheet('QLabel{min-width: 400px;}')
+                btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
+                btn_Continue.setText('Continue')
+                mbox.exec_()
+                if mbox.clickedButton() == btn_Continue:
+                    return (pb_info, False)
+                else:
+                    return (pb_info, True)
+
+        # clean-up preview and thumbnail files
+
+        self.log_debug('cleaning up preview and thumbnail files')
+
+        self.progress.set_progress(version_name, 'Cleaning up...')
+
+        try:
+            os.remove(thumbnail_path)
+            os.remove(preview_path)
+        except:
+            self.log_debug('cleaning up failed')
+        
+        self.log_debug('returning info:\n%s' % pformat(pb_info))
+
+        self.progress.hide()
+
+        return (pb_info, False)
+
+    def publish_progress_dialog(self):
+        from sgtk.platform.qt import QtCore, QtGui
+        
+        class Ui_Progress(object):
+            def setupUi(self, Progress):
+                Progress.setObjectName("Progress")
+                Progress.resize(211, 50)
+                Progress.setStyleSheet("#Progress {background-color: #181818;} #frame {background-color: rgb(0, 0, 0, 20); border: 1px solid rgb(255, 255, 255, 20); border-radius: 5px;}\n")
+                self.horizontalLayout_2 = QtGui.QHBoxLayout(Progress)
+                self.horizontalLayout_2.setSpacing(0)
+                self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
+                self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+                self.frame = QtGui.QFrame(Progress)
+                self.frame.setFrameShape(QtGui.QFrame.StyledPanel)
+                self.frame.setFrameShadow(QtGui.QFrame.Raised)
+                self.frame.setObjectName("frame")
+
+                self.horizontalLayout = QtGui.QHBoxLayout(self.frame)
+                self.horizontalLayout.setSpacing(4)
+                self.horizontalLayout.setContentsMargins(4, 4, 4, 4)
+                self.horizontalLayout.setObjectName("horizontalLayout")
+                self.label = QtGui.QLabel(self.frame)
+                self.label.setMinimumSize(QtCore.QSize(40, 40))
+                self.label.setMaximumSize(QtCore.QSize(40, 40))
+                self.label.setAlignment(QtCore.Qt.AlignCenter)
+                self.label.setStyleSheet("color: #989898; border: 2px solid #4679A4; border-radius: 20px;") 
+                self.label.setText('[SG]')
+                # self.label.setPixmap(QtGui.QPixmap(":/tk_flame_basic/shotgun_logo_blue.png"))
+                self.label.setScaledContents(True)
+                self.label.setObjectName("label")
+                self.horizontalLayout.addWidget(self.label)
+                self.verticalLayout = QtGui.QVBoxLayout()
+                self.verticalLayout.setObjectName("verticalLayout")
+
+                self.progress_header = QtGui.QLabel(self.frame)
+                self.progress_header.setAlignment(QtCore.Qt.AlignBottom|QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft)
+                self.progress_header.setObjectName("progress_header")
+                self.progress_header.setStyleSheet("#progress_header {font-size: 10px; qproperty-alignment: \'AlignBottom | AlignLeft\'; font-weight: bold; font-family: Open Sans; font-style: Regular; color: #878787;}")
+
+                self.verticalLayout.addWidget(self.progress_header)
+                self.progress_message = QtGui.QLabel(self.frame)
+                self.progress_message.setAlignment(QtCore.Qt.AlignLeading|QtCore.Qt.AlignLeft|QtCore.Qt.AlignTop)
+                self.progress_message.setObjectName("progress_message")
+                self.progress_message.setStyleSheet("#progress_message {font-size: 10px; qproperty-alignment: \'AlignTop | AlignLeft\'; font-family: Open Sans; font-style: Regular; color: #58595A;}")
+                self.verticalLayout.addWidget(self.progress_message)
+                self.horizontalLayout.addLayout(self.verticalLayout)
+                self.horizontalLayout_2.addWidget(self.frame)
+
+                self.retranslateUi(Progress)
+                QtCore.QMetaObject.connectSlotsByName(Progress)
+
+            def retranslateUi(self, Progress):
+                Progress.setWindowTitle(QtGui.QApplication.translate("Progress", "Form", None, QtGui.QApplication.UnicodeUTF8))
+                self.progress_header.setText(QtGui.QApplication.translate("Progress", "ShotGrid Integration", None, QtGui.QApplication.UnicodeUTF8))
+                self.progress_message.setText(QtGui.QApplication.translate("Progress", "Updating config....", None, QtGui.QApplication.UnicodeUTF8))
+
+        class Progress(QtGui.QWidget):
+            """
+            Overlay widget that reports toolkit bootstrap progress to the user.
+            """
+
+            PROGRESS_HEIGHT = 48
+            PROGRESS_WIDTH = 280
+            PROGRESS_PADDING = 48
+
+            def __init__(self):
+                """
+                Constructor
+                """
+                # first, call the base class and let it do its thing.
+                QtGui.QWidget.__init__(self)
+
+                # now load in the UI that was created in the UI designer
+                self.ui = Ui_Progress()
+                self.ui.setupUi(self)
+
+                # make it frameless and have it stay on top
+                self.setWindowFlags(
+                    QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.X11BypassWindowManagerHint
+                )
+
+                # place it in the lower left corner of the primary screen
+                primary_screen = QtGui.QApplication.desktop().primaryScreen()
+                rect_screen = QtGui.QApplication.desktop().availableGeometry(primary_screen)
+
+                self.setGeometry(
+                    ( rect_screen.left() + rect_screen.right() ) // 2 - self.PROGRESS_WIDTH // 2, 
+                    ( rect_screen.bottom() - rect_screen.top() ) // 2 - self.PROGRESS_PADDING,
+                    self.PROGRESS_WIDTH,
+                    self.PROGRESS_HEIGHT
+                )
+
+            def set_progress(self, header, msg):
+                self.ui.progress_header.setText(header)
+                self.ui.progress_message.setText(msg)
+                QtGui.QApplication.processEvents()
+
+        return Progress()
+
+    def update_loader_list(self, entity):
+        batch_name = self.flame.batch.name.get_value()
+        add_list = self.prefs.get('additional menu ' + batch_name)
+        add_list_ids = []
+        entity_id = entity.get('id')
+        for existing_entity in add_list:
+            add_list_ids.append(existing_entity.get('id'))
+        if entity_id in add_list_ids:
+            for index, existing_entity in enumerate(add_list):
+                if existing_entity.get('id') == entity_id:
+                    add_list.pop(index)
+        else:
+            add_list.append(entity)
+        self.prefs['additional menu ' + batch_name] = add_list
+
+    def get_entities(self, user_only = True, filter_out=[]):
+        
+        # get current tasks form async cache
+
+        cached_tasks = self.connector.cache_retrive_result('current_tasks')
+
+        if not isinstance(cached_tasks, list):
+            return {}
+
+        # remove tasks without entities and filter if user_only
+        
+        user_id = 0
+        if self.connector.sg_human_user:
+            user_id = self.connector.sg_human_user.get('id', 0)
+        tasks = []
+        for cached_task in cached_tasks:
+            if not cached_task.get('entity'):
+                continue
+            if user_only:
+                if not cached_task.get('task_assignees'):
+                    continue
+                else:
+                    task_assignees_ids = [assignee.get('id') for assignee in cached_task.get('task_assignees', [])]
+                    if user_id not in task_assignees_ids:
+                        continue
+
+            tasks.append(cached_task)            
+
+        # group entities by id
+
+        entities_by_id = {task.get('entity').get('id'):task.get('entity') for task in tasks}
+        
+        shots = []
+        assets = []
+        for entity_id in sorted(entities_by_id.keys()):
+            entity = entities_by_id.get(entity_id)
+            if entity.get('type') == 'Shot':
+                shots.append({'code': entity.get('name'), 'id': entity_id, 'type': 'Shot'})
+            elif entity.get('type') == 'Asset':
+                assets.append({'code': entity.get('name'), 'id': entity_id, 'type': 'Asset'})
+        
+        return {'Asset': assets, 'Shot': shots}
+        
+        '''
+        sg = self.connector.sg
+
+        project_id = self.connector.sg_linked_project_id
+        task_filters = [['project.Project.id', 'is', project_id]]
+
+        if user_only:
+            human_user = sg.find_one('HumanUser', 
+                [['login', 'is', self.connector.sg_user.login]],
+                []
+                )
+            task_filters.append(['task_assignees', 'is', human_user])
+
+        tasks = sg.find('Task',
+            task_filters,
+            ['entity']
+        )
+
+        entities = {}
+        for task in tasks:
+            if task['entity']:
+                task_entity_type = task['entity']['type']
+                task_entity_id = task['entity']['id']
+                if task_entity_type not in entities.keys():
+                    entities[task_entity_type] = []
+                entities[task_entity_type].append(task_entity_id)
+
+        found_entities = {}
+        for entity_type in entities.keys():
+            if entity_type in filter_out:
+                continue
+            filters = ['id', 'in']
+            filters.extend(entities.get(entity_type))
+            found_by_type = sg.find(entity_type, 
+                [ filters ],
+                ['code']
+            )
+            found_entities[entity_type] = list(found_by_type)
+
+        return found_entities
+        '''
+
+    def build_flame_friendly_path(self, path):
+        import glob
+        import fnmatch
+
+        file_names = os.listdir(os.path.dirname(path))
+        if not file_names:
+            return None
+        frame_pattern = re.compile(r"^(.+?)([0-9#]+|[%]0\dd)$")
+        root, ext = os.path.splitext(os.path.basename(path))
+        match = re.search(frame_pattern, root)
+        if not match:
+            return None
+        pattern = os.path.join("%s%s" % (re.sub(match.group(2), "*", root), ext))
+        files = []
+        for file_name in file_names:
+            if fnmatch.fnmatch(file_name, pattern):
+                files.append(os.path.join(os.path.dirname(path), file_name))
+        if not files:
+            return None
+        file_roots = [os.path.splitext(f)[0] for f in files]
+        frame_padding = len(re.search(frame_pattern, file_roots[0]).group(2))
+        offset = len(match.group(1))
+
+        # consitency check
+        frames = []
+        for f in file_roots:
+            try:
+                frame = int(os.path.basename(f)[offset:offset+frame_padding])
+            except:
+                continue
+            frames.append(frame)
+        if not frames:
+            return None
+        min_frame = min(frames)
+        max_frame = max(frames)
+        if ((max_frame + 1) - min_frame) != len(frames):
+            # report what exactly are missing
+            current_frame = min_frame
+            for frame in frames:
+                if not current_frame in frames:
+                    # report logic to be placed here
+                    pass
+                current_frame += 1
+            return None
+        
+        format_str = "[%%0%sd-%%0%sd]" % (
+                frame_padding,
+                frame_padding
+            )
+        
+        frame_spec = format_str % (min_frame, max_frame)
+        file_name = "%s%s%s" % (match.group(1), frame_spec, ext)
+
+        return os.path.join(
+                    os.path.dirname (path),
+                    file_name
+                    )
+
+    def flip_assigned(self, *args, **kwargs):
+        self.prefs['show_all'] = not self.prefs['show_all']
+        self.rescan()
+
+    def flip_assigned_for_entity(self, entity):
+        entity_type = entity.get('type')
+        entity_id = entity.get('id')
+        entity_key = (entity_type, entity_id)
+        if entity_id:
+            self.prefs[entity_key]['show_all'] = not self.prefs[entity_key]['show_all']
+
+    def fold_step_entity(self, entity):
+        entity_type = entity.get('type')
+        entity_id = entity.get('id')
+        entity_key = (entity_type, entity_id)
+        step_key = entity.get('key')
+        self.prefs[entity_key][step_key]['isFolded'] = not self.prefs[entity_key][step_key]['isFolded']
+
+    def fold_task_entity(self, entity):
+        entity_type = entity.get('type')
+        entity_id = entity.get('id')
+        entity_key = (entity_type, entity_id)
+        task_key = entity.get('key')
+        self.prefs[entity_key][task_key]['isFolded'] = not self.prefs[entity_key][task_key]['isFolded']
+
+    def page_fwd(self, *args, **kwargs):
+        self.prefs['current_page'] += 1
+
+    def page_bkw(self, *args, **kwargs):
+        self.prefs['current_page'] = max(self.prefs['current_page'] - 1, 0)
+
+    def refresh(self, *args, **kwargs):
+        pass
+
+    def create_export_presets(self):
+
+        preview_preset = '''<?xml version="1.0"?>
+        <preset version="11">
+        <type>movie</type>
+        <comment>Shotgun movie preview</comment>
+        <movie>
+            <fileType>QuickTime</fileType>
+            <namePattern>&lt;name&gt;</namePattern>
+            <yuvHeadroom>False</yuvHeadroom>
+            <yuvColourSpace>PCS_UNKNOWN</yuvColourSpace>
+        </movie>
+        <video>
+            <fileType>QuickTime</fileType>
+            <codec>33622016</codec>
+            <codecProfile>
+                <rootPath>/opt/Autodesk/mediaconverter/</rootPath>
+                <targetVersion>2020.2</targetVersion>
+                <pathSuffix>/profiles/.33622016/Baseline_RIM_12Mbits.cdxprof</pathSuffix>
+            </codecProfile>
+            <namePattern>&lt;name&gt;</namePattern>
+            <overwriteWithVersions>False</overwriteWithVersions>
+            <lutState>
+                <Setup>
+                    <Base>
+                        <Version>18</Version>
+                        <Note></Note>
+                        <Expanded>False</Expanded>
+                        <ScrollBar>0</ScrollBar>
+                        <Frames>79</Frames>
+                        <Current_Time>1</Current_Time>
+                        <Input_DataType>4</Input_DataType>
+                        <ClampMode>0</ClampMode>
+                        <AdapDegrad>False</AdapDegrad>
+                        <ReadOnly>False</ReadOnly>
+                        <NoMediaHandling>1</NoMediaHandling>
+                        <UsedAsTransition>False</UsedAsTransition>
+                        <FrameBounds W="3200" H="1800" X="0" Y="0" SX="26.666666666666664" SY="15"/>
+                    </Base>
+                    <State>
+                        <LogLinTargetPixelFormat>143</LogLinTargetPixelFormat>
+                        <LogLinPropRefWhite>True</LogLinPropRefWhite>
+                        <LogLinPropRefBlack>True</LogLinPropRefBlack>
+                        <LogLinPropHighlight>True</LogLinPropHighlight>
+                        <LogLinPropShadow>True</LogLinPropShadow>
+                        <LogLinPropSoftclip>True</LogLinPropSoftclip>
+                        <LogLinPropDispGamma>True</LogLinPropDispGamma>
+                        <LogLinPropFilmGamma>True</LogLinPropFilmGamma>
+                        <LogLinPropExposure>True</LogLinPropExposure>
+                        <LogLinPropDefog>True</LogLinPropDefog>
+                        <LogLinPropKneeLow>True</LogLinPropKneeLow>
+                        <LogLinPropKneeHigh>True</LogLinPropKneeHigh>
+                        <LogLinAdjustPropLuts>True</LogLinAdjustPropLuts>
+                        <LogLinPropLowRoll>True</LogLinPropLowRoll>
+                        <LogLinPropLowCon>True</LogLinPropLowCon>
+                        <LogLinPropContrast>True</LogLinPropContrast>
+                        <LogLinPropHighCon>True</LogLinPropHighCon>
+                        <LogLinPropHighRoll>True</LogLinPropHighRoll>
+                        <LogLinHasBeenActivated>True</LogLinHasBeenActivated>
+                        <LutsBuilder>
+                            <LutsBuilder LutFileVersion="3">
+                                <ConversionType>0</ConversionType>
+                                <GammaType>1</GammaType>
+                                <BasicMode>6</BasicMode>
+                                <AdjustMode>False</AdjustMode>
+                                <RedLut>
+                                    <Cineon Version="1">
+                                        <ConversionType>0</ConversionType>
+                                        <ReferenceWhite>0.669599</ReferenceWhite>
+                                        <ReferenceBlack>0.092864</ReferenceBlack>
+                                        <Highlight>1</Highlight>
+                                        <Shadow>0</Shadow>
+                                        <Softclip>0</Softclip>
+                                        <FilmGamma>0.600000</FilmGamma>
+                                        <GammaCorrection>0.450000</GammaCorrection>
+                                        <Defog>0</Defog>
+                                        <KneeLow>0</KneeLow>
+                                        <KneeHigh>0</KneeHigh>
+                                        <Exposure>0</Exposure>
+                                        <LowRoll>0</LowRoll>
+                                        <LowCon>0</LowCon>
+                                        <Contrast>0</Contrast>
+                                        <HighCon>0</HighCon>
+                                        <HighRoll>0</HighRoll>
+                                        <Encoding>9</Encoding>
+                                        <Invert>0</Invert>
+                                    </Cineon>
+                                </RedLut>
+                                <GreenLut>
+                                    <Cineon Version="1">
+                                        <ConversionType>0</ConversionType>
+                                        <ReferenceWhite>0.669599</ReferenceWhite>
+                                        <ReferenceBlack>0.092864</ReferenceBlack>
+                                        <Highlight>1</Highlight>
+                                        <Shadow>0</Shadow>
+                                        <Softclip>0</Softclip>
+                                        <FilmGamma>0.600000</FilmGamma>
+                                        <GammaCorrection>0.450000</GammaCorrection>
+                                        <Defog>0</Defog>
+                                        <KneeLow>0</KneeLow>
+                                        <KneeHigh>0</KneeHigh>
+                                        <Exposure>0</Exposure>
+                                        <LowRoll>0</LowRoll>
+                                        <LowCon>0</LowCon>
+                                        <Contrast>0</Contrast>
+                                        <HighCon>0</HighCon>
+                                        <HighRoll>0</HighRoll>
+                                        <Encoding>9</Encoding>
+                                        <Invert>0</Invert>
+                                    </Cineon>
+                                </GreenLut>
+                                <BlueLut>
+                                    <Cineon Version="1">
+                                        <ConversionType>0</ConversionType>
+                                        <ReferenceWhite>0.669599</ReferenceWhite>
+                                        <ReferenceBlack>0.092864</ReferenceBlack>
+                                        <Highlight>1</Highlight>
+                                        <Shadow>0</Shadow>
+                                        <Softclip>0</Softclip>
+                                        <FilmGamma>0.600000</FilmGamma>
+                                        <GammaCorrection>0.450000</GammaCorrection>
+                                        <Defog>0</Defog>
+                                        <KneeLow>0</KneeLow>
+                                        <KneeHigh>0</KneeHigh>
+                                        <Exposure>0</Exposure>
+                                        <LowRoll>0</LowRoll>
+                                        <LowCon>0</LowCon>
+                                        <Contrast>0</Contrast>
+                                        <HighCon>0</HighCon>
+                                        <HighRoll>0</HighRoll>
+                                        <Encoding>9</Encoding>
+                                        <Invert>0</Invert>
+                                    </Cineon>
+                                </BlueLut>
+                                <ColorTransformBuilder>
+                                    <ColorTransformBuilder CTBVersion="1.400000">
+                                        <CTBCustom>False</CTBCustom>
+                                        <CTBInvert>False</CTBInvert>
+                                        <CTBSolo>False</CTBSolo>
+                                        <CTBSelected>-1</CTBSelected>
+                                        <CTBIsColourSpaceConversion>False</CTBIsColourSpaceConversion>
+                                        <CTBSrcColourSpace></CTBSrcColourSpace>
+                                        <CTBDstColourSpace>Unknown</CTBDstColourSpace>
+                                        <CTBTaggedColourSpace>From Source</CTBTaggedColourSpace>
+                                        <CTBViewTransformEnabled>True</CTBViewTransformEnabled>
+                                        <CTBVTSrcCS>From Source</CTBVTSrcCS>
+                                        <CTBVTViewCS>From Rules</CTBVTViewCS>
+                                        <CTBVTDispCS>sRGB display</CTBVTDispCS>
+                                        <CTBItems/>
+                                    </ColorTransformBuilder>
+                                </ColorTransformBuilder>
+                            </LutsBuilder>
+                        </LutsBuilder>
+                    </State>
+                </Setup>
+            </lutState>
+            <resize>
+                <resizeType>fit</resizeType>
+                <resizeFilter>lanczos</resizeFilter>
+                <width>2048</width>
+                <height>1200
+                </height>
+                <bitsPerChannel>8</bitsPerChannel>
+                <numChannels>3</numChannels>
+                <floatingPoint>False</floatingPoint>
+                <bigEndian>False</bigEndian>
+                <pixelRatio>1</pixelRatio>
+                <scanFormat>P</scanFormat>
+            </resize>
+        </video>
+        <audio>
+            <fileType>QuickTime</fileType>
+            <codec>4027060226</codec>
+            <codecProfile>
+                <rootPath>/opt/Autodesk/mediaconverter/</rootPath>
+                <targetVersion>2020.2</targetVersion>
+                <pathSuffix>/profiles/.4027060226/160 kbps.cdxprof</pathSuffix>
+            </codecProfile>
+            <namePattern>&lt;name&gt;</namePattern>
+            <mixdown>To2</mixdown>
+            <sampleRate>-1</sampleRate>
+            <bitDepth>-1</bitDepth>
+        </audio>
+        </preset>'''
+
+        thumbnail_preset = '''<?xml version="1.0" encoding="UTF-8"?>
+        <preset version="11">
+        <type>image</type>
+        <comment>Shotgun thumbnail</comment>
+        <video>
+            <fileType>Jpeg</fileType>
+            <codec>923688</codec>
+            <codecProfile></codecProfile>
+            <namePattern>&lt;name&gt;.</namePattern>
+            <compressionQuality>100</compressionQuality>
+            <transferCharacteristic>2</transferCharacteristic>
+            <publishLinked>0</publishLinked>
+            <lutState>
+                <Setup>
+                    <Base>
+                        <Version>18</Version>
+                        <Note></Note>
+                        <Expanded>False</Expanded>
+                        <ScrollBar>0</ScrollBar>
+                        <Frames>79</Frames>
+                        <Current_Time>1</Current_Time>
+                        <Input_DataType>4</Input_DataType>
+                        <ClampMode>0</ClampMode>
+                        <AdapDegrad>False</AdapDegrad>
+                        <ReadOnly>False</ReadOnly>
+                        <NoMediaHandling>1</NoMediaHandling>
+                        <UsedAsTransition>False</UsedAsTransition>
+                        <FrameBounds W="3200" H="1800" X="0" Y="0" SX="26.666666666666664" SY="15"/>
+                    </Base>
+                    <State>
+                        <LogLinTargetPixelFormat>143</LogLinTargetPixelFormat>
+                        <LogLinPropRefWhite>True</LogLinPropRefWhite>
+                        <LogLinPropRefBlack>True</LogLinPropRefBlack>
+                        <LogLinPropHighlight>True</LogLinPropHighlight>
+                        <LogLinPropShadow>True</LogLinPropShadow>
+                        <LogLinPropSoftclip>True</LogLinPropSoftclip>
+                        <LogLinPropDispGamma>True</LogLinPropDispGamma>
+                        <LogLinPropFilmGamma>True</LogLinPropFilmGamma>
+                        <LogLinPropExposure>True</LogLinPropExposure>
+                        <LogLinPropDefog>True</LogLinPropDefog>
+                        <LogLinPropKneeLow>True</LogLinPropKneeLow>
+                        <LogLinPropKneeHigh>True</LogLinPropKneeHigh>
+                        <LogLinAdjustPropLuts>True</LogLinAdjustPropLuts>
+                        <LogLinPropLowRoll>True</LogLinPropLowRoll>
+                        <LogLinPropLowCon>True</LogLinPropLowCon>
+                        <LogLinPropContrast>True</LogLinPropContrast>
+                        <LogLinPropHighCon>True</LogLinPropHighCon>
+                        <LogLinPropHighRoll>True</LogLinPropHighRoll>
+                        <LogLinHasBeenActivated>True</LogLinHasBeenActivated>
+                        <LutsBuilder>
+                            <LutsBuilder LutFileVersion="3">
+                                <ConversionType>0</ConversionType>
+                                <GammaType>1</GammaType>
+                                <BasicMode>6</BasicMode>
+                                <AdjustMode>False</AdjustMode>
+                                <RedLut>
+                                    <Cineon Version="1">
+                                        <ConversionType>0</ConversionType>
+                                        <ReferenceWhite>0.669599</ReferenceWhite>
+                                        <ReferenceBlack>0.092864</ReferenceBlack>
+                                        <Highlight>1</Highlight>
+                                        <Shadow>0</Shadow>
+                                        <Softclip>0</Softclip>
+                                        <FilmGamma>0.600000</FilmGamma>
+                                        <GammaCorrection>0.450000</GammaCorrection>
+                                        <Defog>0</Defog>
+                                        <KneeLow>0</KneeLow>
+                                        <KneeHigh>0</KneeHigh>
+                                        <Exposure>0</Exposure>
+                                        <LowRoll>0</LowRoll>
+                                        <LowCon>0</LowCon>
+                                        <Contrast>0</Contrast>
+                                        <HighCon>0</HighCon>
+                                        <HighRoll>0</HighRoll>
+                                        <Encoding>9</Encoding>
+                                        <Invert>0</Invert>
+                                    </Cineon>
+                                </RedLut>
+                                <GreenLut>
+                                    <Cineon Version="1">
+                                        <ConversionType>0</ConversionType>
+                                        <ReferenceWhite>0.669599</ReferenceWhite>
+                                        <ReferenceBlack>0.092864</ReferenceBlack>
+                                        <Highlight>1</Highlight>
+                                        <Shadow>0</Shadow>
+                                        <Softclip>0</Softclip>
+                                        <FilmGamma>0.600000</FilmGamma>
+                                        <GammaCorrection>0.450000</GammaCorrection>
+                                        <Defog>0</Defog>
+                                        <KneeLow>0</KneeLow>
+                                        <KneeHigh>0</KneeHigh>
+                                        <Exposure>0</Exposure>
+                                        <LowRoll>0</LowRoll>
+                                        <LowCon>0</LowCon>
+                                        <Contrast>0</Contrast>
+                                        <HighCon>0</HighCon>
+                                        <HighRoll>0</HighRoll>
+                                        <Encoding>9</Encoding>
+                                        <Invert>0</Invert>
+                                    </Cineon>
+                                </GreenLut>
+                                <BlueLut>
+                                    <Cineon Version="1">
+                                        <ConversionType>0</ConversionType>
+                                        <ReferenceWhite>0.669599</ReferenceWhite>
+                                        <ReferenceBlack>0.092864</ReferenceBlack>
+                                        <Highlight>1</Highlight>
+                                        <Shadow>0</Shadow>
+                                        <Softclip>0</Softclip>
+                                        <FilmGamma>0.600000</FilmGamma>
+                                        <GammaCorrection>0.450000</GammaCorrection>
+                                        <Defog>0</Defog>
+                                        <KneeLow>0</KneeLow>
+                                        <KneeHigh>0</KneeHigh>
+                                        <Exposure>0</Exposure>
+                                        <LowRoll>0</LowRoll>
+                                        <LowCon>0</LowCon>
+                                        <Contrast>0</Contrast>
+                                        <HighCon>0</HighCon>
+                                        <HighRoll>0</HighRoll>
+                                        <Encoding>9</Encoding>
+                                        <Invert>0</Invert>
+                                    </Cineon>
+                                </BlueLut>
+                                <ColorTransformBuilder>
+                                    <ColorTransformBuilder CTBVersion="1.400000">
+                                        <CTBCustom>False</CTBCustom>
+                                        <CTBInvert>False</CTBInvert>
+                                        <CTBSolo>False</CTBSolo>
+                                        <CTBSelected>-1</CTBSelected>
+                                        <CTBIsColourSpaceConversion>False</CTBIsColourSpaceConversion>
+                                        <CTBSrcColourSpace></CTBSrcColourSpace>
+                                        <CTBDstColourSpace>Unknown</CTBDstColourSpace>
+                                        <CTBTaggedColourSpace>From Source</CTBTaggedColourSpace>
+                                        <CTBViewTransformEnabled>True</CTBViewTransformEnabled>
+                                        <CTBVTSrcCS>From Source</CTBVTSrcCS>
+                                        <CTBVTViewCS>From Rules</CTBVTViewCS>
+                                        <CTBVTDispCS>sRGB display</CTBVTDispCS>
+                                        <CTBItems/>
+                                    </ColorTransformBuilder>
+                                </ColorTransformBuilder>
+                            </LutsBuilder>
+                        </LutsBuilder>
+                    </State>
+                </Setup>
+            </lutState>
+            <resize>
+            <resizeType>fit</resizeType>
+            <resizeFilter>lanczos</resizeFilter>
+            <width>720</width>
+            <height>400</height>
+            <bitsPerChannel>8</bitsPerChannel>
+            <numChannels>3</numChannels>
+            <floatingPoint>0</floatingPoint>
+            <bigEndian>1</bigEndian>
+            <pixelRatio>1.000000</pixelRatio>
+            <scanFormat>P</scanFormat>
+            </resize>
+            </video>
+        <name>
+        <framePadding>0</framePadding>
+        <startFrame>1</startFrame>
+        <useTimecode>1</useTimecode>
+        </name>
+        </preset>'''
+
+        preview_preset_file_path = os.path.join(self.framework.prefs_folder, 'GeneratePreview.xml')
+        if not os.path.isdir(os.path.dirname(preview_preset_file_path)):
+            try:
+                os.makedirs(os.path.dirname(preview_preset_file_path))
+            except Exception as e:
+                self.log('unable to create folder %s' % os.path.dirname(preview_preset_file_path))
+                self.log(e)
+
+        if not os.path.isfile(preview_preset_file_path):
+            try:
+                with open(preview_preset_file_path, 'w') as preview_preset_file:
+                    preview_preset_file.write(preview_preset)
+                    preview_preset_file.close()
+            except Exception as e:
+                self.log('unable to save preview preset to %s' % preview_preset_file_path)
+                self.log(e)                
+
+        thumbnail_preset_file_path = os.path.join(self.framework.prefs_folder, 'GenerateThumbnail.xml')
+        if not os.path.isfile(thumbnail_preset_file_path):
+            try:
+                with open(thumbnail_preset_file_path, 'w') as thumbnail_preset_file:
+                    thumbnail_preset_file.write(thumbnail_preset)
+                    thumbnail_preset_file.close()
+            except Exception as e:
+                self.log('unable to save thumbnail preset to %s' % preview_preset_file_path)
+                self.log(e)
+
+    def rescan(self, *args, **kwargs):
+        if not self.flame:
+            try:
+                import flame
+                self.flame = flame
+            except:
+                self.flame = None
+
+        if self.flame:
+            self.flame.execute_shortcut('Rescan Python Hooks')
+            self.log_debug('Rescan Python Hooks')
+
 # --- FLAME STARTUP SEQUENCE ---
 # Flame startup sequence is a bit complicated
 # If the app installed in /opt/Autodesk/<user>/python
@@ -3515,7 +5659,7 @@ def load_apps(apps, app_framework, kitsuConnector):
         apps.append(flameBatchBlessing(app_framework))
         apps.append(flameMenuNewBatch(app_framework, kitsuConnector))
         # apps.append(flameMenuBatchLoader(app_framework, kitsuConnector))
-        # apps.append(flameMenuPublisher(app_framework, kitsuConnector))
+        apps.append(flameMenuPublisher(app_framework, kitsuConnector))
     except Exception as e:
         import traceback
         pprint(e)
