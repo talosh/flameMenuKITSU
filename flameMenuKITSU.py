@@ -15,7 +15,7 @@ import re
 from pprint import pprint
 from pprint import pformat
 
-__version__ = 'v0.0.1 dev 005'
+__version__ = 'v0.0.1 dev 006'
 
 menu_group_name = 'KITSU'
 app_name = 'flameMenuKITSU'
@@ -24,42 +24,61 @@ DEBUG = True
 shot_code_field = '30_dl_vfx_id'
 
 default_templates = {
-# Resolved fields are:
-# {Sequence},{sg_asset_type},{Asset},{Shot},{Step},{Step_code},{name},{version},{version_four},{frame},{ext}
-# {name} and {version} (or {version_four}) are taken from the clip name or from Batch name and number of Batch itertations as a fallback.
-# EXAMPLE: There are 9 batch iterations in batch group.
-# Any of the clips named as "mycomp", "SHOT_001_mycomp", "SHOT_001_mycomp_009", "SHOT_001_mycomp_v009"
-# Would give us "mycomp" as a {name} and 009 as {version}
-# Version number padding are default to 3 at the moment, ### style padding is not yet implemented
-# Publishing into asset will just replace {Shot} fied with asset name
-'Shot': {
-    'flame_render': {
-        'default': 'sequences/{Sequence}/{Shot}/{Step}/publish/{Shot}_{name}_v{version}/{Shot}_{name}_v{version}.{frame}.{ext}',
-        'PublishedFileType': 'Flame Render'
+    "working": {
+        "mountpoint": "/media",
+        "root": "dirtylooks_vfx",
+        "folder_path": {
+            "shot": "<Project>/scenes/<Sequence>/<Shot>/<TaskType>",
+            "asset": "<Project>/assets/<AssetType>/<Asset>/<TaskType>",
+            "sequence": "<Project>/sequences/<Sequence>/<TaskType>",
+            "scene": "<Project>/scenes/<Sequence>/<Scene>/<TaskType>",
+            "style": "lowercase"
         },
-    'flame_batch': {
-        'default': 'sequences/{Sequence}/{Shot}/{Step}/publish/flame_batch/{Shot}_{name}_v{version}.batch',
-        'PublishedFileType': 'Flame Batch File'                  
-        },
-    'version_name': {
-        'default': '{Shot}_{name}_v{version}',
+        "file_name": {
+            "shot": "<Project>_<Shot>_<TaskType>",
+            "asset": "<Project>_<AssetType>_<Asset>_<TaskType>",
+            "sequence": "<Project>_<Sequence>_<TaskType>",
+            "scene": "<Project>_<Sequence>_<Scene>_<TaskType>",
+            "style": "lowercase"
+        }
     },
-    'fields': ['{Sequence}', '{Shot}', '{Step}', '{Step_code}', '{name}', '{version}', '{version_four}', '{frame}', '{ext}']
-},
-'Asset':{
-    'flame_render': {
-        'default': 'assets/{sg_asset_type}/{Asset}/{Step}/publish/{Asset}_{name}_v{version}/{Asset}_{name}_v{version}.{frame}.{ext}',
-        'PublishedFileType': 'Flame Render'
+    "output": {
+        "mountpoint": "/media",
+        "root": "dirtylooks_vfx",
+        "folder_path": {
+            "shot": "<Project>/shots/<Sequence>/<Shot>/<OutputType>",
+            "asset": "<Project>/assets/<AssetType>/<Asset>/<OutputType>",
+            "sequence": "<Project>/sequences/<Sequence>/<OutputType>",
+            "scene": "<Project>/scenes/<Sequence>/<Scene>/<OutputType>",
+            "style": "lowercase"
         },
-    'flame_batch': {
-        'default': 'assets/{sg_asset_type}/{Asset}/{Step}/publish/flame_batch/{Asset}_{name}_v{version}.batch',
-        'PublishedFileType': 'Flame Batch File'                  
-        },
-    'version_name': {
-        'default': '{Asset}_{name}_v{version}',
+        "file_name": {
+            "shot": "<Project>_<Sequence>_<Shot>_<OutputType>_<OutputFile>",
+            "asset": "<Project>_<AssetType>_<Asset>_<OutputType>_<OutputFile>",
+            "sequence": "<Project>_<Sequence>_<OuputType>_<OutputFile>",
+            "scene": "<Project>_<Sequence>_<Scene>_<OutputType>_<OutputFile>",
+            "style": "lowercase"
+        }
     },
-    'fields': ['{Sequence}', '{sg_asset_type}', '{Asset}', '{Step}', '{Step_code}', '{name}', '{version}', '{version_four}', '{frame}', '{ext}']
-}}
+    "preview": {
+        "mountpoint": "/media",
+        "root": "dirtylooks_vfx",
+        "folder_path": {
+            "shot": "<Project>/shots/<Sequence>/<Shot>/<TaskType>",
+            "asset": "<Project>/assets/<AssetType>/<Asset>/<TaskType>",
+            "sequence": "<Project>/sequences/<Sequence>/<TaskType>",
+            "scene": "<Project>/scene/<Scene>/<TaskType>",
+            "style": "lowercase"
+        },
+        "file_name": {
+            "shot": "<Project>_<Sequence>_<Shot>_<TaskType>",
+            "asset": "<Project>_<AssetType>_<Asset>_<TaskType>",
+            "sequence": "<Project>_<Sequence>_<TaskType>",
+            "scene": "<Project>_<Scene>_<TaskType>",
+            "style": "lowercase"
+        }
+    }
+}
 
 default_flame_export_presets = {
     # {0: flame.PresetVisibility.Project, 1: flame.PresetVisibility.Shared, 2: flame.PresetVisibility.Autodesk, 3: flame.PresetVisibility.Shotgun}
@@ -503,7 +522,13 @@ class flameKitsuConnector(object):
         self.flame_project = None
         self.linked_project = None
         self.linked_project_id = None
+
         self.pipeline_data = {}
+        self.pipeline_data['project_tasks_for_person'] = []
+        self.pipeline_data['all_episodes_for_project'] = []
+        self.pipeline_data['all_sequences_for_project'] = []
+        self.pipeline_data['all_shots_for_project'] = []
+        self.pipeline_data['all_assets_for_project'] = []
 
         self.shot_code_field = shot_code_field
 
@@ -843,76 +868,80 @@ class flameKitsuConnector(object):
             current_project = {'id': self.linked_project_id}
         if not current_client:
             current_client = self.gazu_client
-        
-        if not isinstance(self.pipeline_data.get('project_tasks_for_person'), list):
-            self.pipeline_data['project_tasks_for_person'] = []
-        if not isinstance(self.pipeline_data.get('all_episodes_for_project'), list):
-            self.pipeline_data['all_episodes_for_project'] = []
-        if not isinstance(self.pipeline_data.get('all_sequences_for_project'), list):
-            self.pipeline_data['all_sequences_for_project'] = []
-        if not isinstance(self.pipeline_data.get('all_shots_for_project'), list):
-            self.pipeline_data['all_shots_for_project'] = []
-        if not isinstance(self.pipeline_data.get('all_assets_for_project'), list):
-            self.pipeline_data['all_assets_for_project'] = []
 
-        try:
-            all_tasks_for_person = self.gazu.task.all_tasks_for_person(self.user, client=current_client)
-            all_tasks_for_person.extend(self.gazu.task.all_done_tasks_for_person(self.user, client=current_client))
-            project_tasks_for_person = []
-            for x in all_tasks_for_person:
-                if x.get('project_id') == self.linked_project_id:
-                    project_tasks_for_person.append(x)
-            self.pipeline_data['project_tasks_for_person'] = project_tasks_for_person
-        except Exception as e:
-            self.log(pformat(e))
-            self.pipeline_data['project_tasks_for_person'] = []
+        def project_tasks_for_person():
+            try:
+                all_tasks_for_person = self.gazu.task.all_tasks_for_person(self.user, client=current_client)
+                all_tasks_for_person.extend(self.gazu.task.all_done_tasks_for_person(self.user, client=current_client))
+                project_tasks_for_person = []
+                for x in all_tasks_for_person:
+                    if x.get('project_id') == self.linked_project_id:
+                        project_tasks_for_person.append(x)
+                self.pipeline_data['project_tasks_for_person'] = project_tasks_for_person
+            except Exception as e:
+                self.log(pformat(e))
 
-        try:
-            self.pipeline_data['all_episodes_for_project'] = self.gazu.shot.all_episodes_for_project(current_project, client=current_client)
-        except Exception as e:
-            self.log(pformat(e))
+        def all_episodes_for_project():
+            try:
+                self.pipeline_data['all_episodes_for_project'] = self.gazu.shot.all_episodes_for_project(current_project, client=current_client)
+            except Exception as e:
+                self.log(pformat(e))
 
-        try:
-            '''
-            assets_with_modified_code = []
-            all_assets_for_project = self.gazu.asset.all_assets_for_project(current_project, client=current_client)
-            for asset in all_assets_for_project:
-                asset['code'] = asset['name']
-                if self.shot_code_field:
-                    data = asset.get('data')
-                    if data:
-                        code = data.get(shot_code_field)
-                        if code:
-                            asset['code'] = code
-                assets_with_modified_code.append(asset)
-            '''
-            self.pipeline_data['all_assets_for_project'] = self.gazu.asset.all_assets_for_project(current_project, client=current_client)
-        except Exception as e:
-            self.log(pformat(e))
-            self.pipeline_data['all_assets_for_project'] = []
-    
-        try:
-            shots_with_modified_code = []
-            all_shots_for_project = self.gazu.shot.all_shots_for_project(current_project, client=current_client)
-            for shot in all_shots_for_project:
-                shot['code'] = shot['name']
-                if self.shot_code_field:
-                    data = shot.get('data')
-                    if data:
-                        code = data.get(shot_code_field)
-                        if code:
-                            shot['code'] = code
-                shots_with_modified_code.append(shot)
-            self.pipeline_data['all_shots_for_project'] = list(shots_with_modified_code)
-        except Exception as e:
-            self.log(pformat(e))
-            self.pipeline_data['all_shots_for_project'] = []
+        def all_assets_for_project():
+            try:
+                '''
+                assets_with_modified_code = []
+                all_assets_for_project = self.gazu.asset.all_assets_for_project(current_project, client=current_client)
+                for asset in all_assets_for_project:
+                    asset['code'] = asset['name']
+                    if self.shot_code_field:
+                        data = asset.get('data')
+                        if data:
+                            code = data.get(shot_code_field)
+                            if code:
+                                asset['code'] = code
+                    assets_with_modified_code.append(asset)
+                '''
+                self.pipeline_data['all_assets_for_project'] = self.gazu.asset.all_assets_for_project(current_project, client=current_client)
+            except Exception as e:
+                self.log(pformat(e))
 
-        try:
-            self.pipeline_data['all_sequences_for_project'] = self.gazu.shot.all_sequences_for_project(current_project, client=current_client)
-        except Exception as e:
-            self.log(pformat(e))
+        def all_shots_for_project():
+            try:
+                shots_with_modified_code = []
+                all_shots_for_project = self.gazu.shot.all_shots_for_project(current_project, client=current_client)
+                for shot in all_shots_for_project:
+                    shot['code'] = shot['name']
+                    if self.shot_code_field:
+                        data = shot.get('data')
+                        if data:
+                            code = data.get(shot_code_field)
+                            if code:
+                                shot['code'] = code
+                    shots_with_modified_code.append(shot)
+                self.pipeline_data['all_shots_for_project'] = list(shots_with_modified_code)
+            except Exception as e:
+                self.log(pformat(e))
 
+        def all_sequences_for_project():
+            try:
+                self.pipeline_data['all_sequences_for_project'] = self.gazu.shot.all_sequences_for_project(current_project, client=current_client)
+            except Exception as e:
+                self.log(pformat(e))
+
+        requests = []
+        requests.append(threading.Thread(target=self.project_tasks_for_person, args=()))
+        requests.append(threading.Thread(target=self.all_episodes_for_project, args=()))
+        requests.append(threading.Thread(target=self.all_assets_for_project, args=()))
+        requests.append(threading.Thread(target=self.all_shots_for_project, args=()))
+        requests.append(threading.Thread(target=self.all_sequences_for_project, args=()))
+
+        for request in requests:
+            request.daemon = True
+            request.start()
+
+        for request in requests:
+            request.join()
 
     def terminate_loops(self):
         self.threads = False
