@@ -930,11 +930,11 @@ class flameKitsuConnector(object):
                 self.log(pformat(e))
 
         requests = []
-        requests.append(threading.Thread(target=self.project_tasks_for_person, args=()))
-        requests.append(threading.Thread(target=self.all_episodes_for_project, args=()))
-        requests.append(threading.Thread(target=self.all_assets_for_project, args=()))
-        requests.append(threading.Thread(target=self.all_shots_for_project, args=()))
-        requests.append(threading.Thread(target=self.all_sequences_for_project, args=()))
+        requests.append(threading.Thread(target=project_tasks_for_person, args=()))
+        requests.append(threading.Thread(target=all_episodes_for_project, args=()))
+        requests.append(threading.Thread(target=all_assets_for_project, args=()))
+        requests.append(threading.Thread(target=all_shots_for_project, args=()))
+        requests.append(threading.Thread(target=all_sequences_for_project, args=()))
 
         for request in requests:
             request.daemon = True
