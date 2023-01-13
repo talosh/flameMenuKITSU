@@ -2583,6 +2583,7 @@ class flameMenuNewBatch(flameMenuApp):
             menu_item['name'] = '~ Show All Avaliable'
         menu_item['order'] = menu_item_order
         menu_item_order += 1
+        menu_item['separator'] = 'below'
         menu_item['execute'] = self.flip_assigned
         menu['actions'].append(menu_item)
 
