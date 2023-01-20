@@ -15,7 +15,7 @@ import re
 from pprint import pprint
 from pprint import pformat
 
-__version__ = 'v0.0.1 dev 006'
+__version__ = 'v0.0.1 dev 008'
 
 menu_group_name = 'KITSU'
 app_name = 'flameMenuKITSU'
@@ -698,7 +698,7 @@ class flameKitsuConnector(object):
 
         hbox2 = QtWidgets.QHBoxLayout()
 
-        lbl_User = QtWidgets.QLabel('Email: ', window)
+        lbl_User = QtWidgets.QLabel('User: ', window)
         lbl_User.setStyleSheet('QFrame {color: #989898; background-color: #373737}')
         lbl_User.setFixedSize(108, 28)
         lbl_User.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
@@ -3596,12 +3596,12 @@ class flameMenuPublisher(flameMenuApp):
 
         menus = []
 
-        '''
         add_remove_menu = self.build_addremove_menu()
-        # for action in add_remove_menu['actions']:
-        #     action['isVisible'] = self.scope_clip
+        for action in add_remove_menu['actions']:
+            action['isVisible'] = self.scope_clip
         menus.append(add_remove_menu)
         
+        '''
         for entity in add_menu_list:
             publish_menu = self.build_publish_menu(entity)
             if publish_menu:
@@ -3613,9 +3613,9 @@ class flameMenuPublisher(flameMenuApp):
         return menus
 
     def build_addremove_menu(self):
-        if not self.connector.sg_user:
+        if not self.connector.user:
             return None
-        if not self.connector.sg_linked_project:
+        if not self.connector.linked_project:
             return None
 
         flame_project_name = self.flame.project.current_project.name
@@ -3627,9 +3627,12 @@ class flameMenuPublisher(flameMenuApp):
 
         menu = {'actions': []}
         menu['name'] = self.menu_group_name + ' Add/Remove'
+        menu_item_order = 0
 
         menu_item = {}
         menu_item['name'] = '~ Rescan'
+        menu_item['order'] = menu_item_order
+        menu_item_order += 1
         menu_item['execute'] = self.rescan
         menu['actions'].append(menu_item)
 
@@ -3638,11 +3641,15 @@ class flameMenuPublisher(flameMenuApp):
             menu_item['name'] = '~ Show Assigned Only'
         else:
             menu_item['name'] = '~ Show All'
+        menu_item['order'] = menu_item_order
+        menu_item_order += 1
         menu_item['execute'] = self.flip_assigned
         menu['actions'].append(menu_item)
 
         user_only = not self.prefs['show_all']
         filter_out = ['Project', 'Sequence']
+
+        return menu
 
         found_entities = self.get_entities(user_only, filter_out)
 
