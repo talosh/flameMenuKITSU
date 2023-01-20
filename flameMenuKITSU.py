@@ -23,7 +23,7 @@ DEBUG = True
 
 shot_code_field = '30_dl_vfx_id'
 
-default_templates = {
+default_templates_zou = {
     "working": {
         "mountpoint": "/media",
         "root": "dirtylooks_vfx",
