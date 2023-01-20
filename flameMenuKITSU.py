@@ -1044,6 +1044,7 @@ class flameMenuProjectconnect(flameMenuApp):
 
             menu_item = {}
             menu_item['name'] = 'Sign in to Kitsu'
+            menu_item['waitCursor'] = False
             menu_item['execute'] = self.sign_in
             menu['actions'].append(menu_item)
 
@@ -2691,7 +2692,6 @@ class flameMenuNewBatch(flameMenuApp):
         max_menu_lenght = self.prefs.get('menu_max_items_per_page')
 
         for index, entity_type in enumerate(sorted(found_entities.keys())):
-
             menu_item = {}
             menu_item['name'] = '- [ ' + entity_type + 's ] [+]'
             if entity_type == 'Asset':
@@ -2732,6 +2732,8 @@ class flameMenuNewBatch(flameMenuApp):
         # controls and entites fits within menu size
         # we do not need additional page switch controls
             for menu_item in menu_main_body:
+                menu_item['order'] = menu_item_order
+                menu_item_order += 1
                 menu['actions'].append(menu_item)
 
         else:
@@ -3648,10 +3650,8 @@ class flameMenuPublisher(flameMenuApp):
 
         user_only = not self.prefs['show_all']
         filter_out = ['Project', 'Sequence']
-
-        return menu
-
         found_entities = self.get_entities(user_only, filter_out)
+        menu_main_body = []
 
         if len(found_entities) == 0:
             menu_item = {}
@@ -3659,6 +3659,8 @@ class flameMenuPublisher(flameMenuApp):
                 menu_item['name'] = ' '*4 + 'No tasks found'
             else:
                 menu_item['name'] = ' '*4 + 'No assigned tasks found'
+            menu_item['order'] = menu_item_order
+            menu_item_order += 1
             menu_item['execute'] = self.rescan
             menu_item['isEnabled'] = False
             menu['actions'].append(menu_item)
@@ -3670,12 +3672,12 @@ class flameMenuPublisher(flameMenuApp):
             menu_lenght += len(found_entities.get(entity_type))
         max_menu_lenght = self.prefs.get('menu_max_items_per_page')
 
-        menu_main_body = []
         for index, entity_type in enumerate(sorted(found_entities.keys())):
             menu_item = {}
             menu_item['name'] = '- [ ' + entity_type + 's ]'
             menu_item['execute'] = self.rescan
             menu_main_body.append(menu_item)
+
             entities_by_name = {}
             for entity in found_entities[entity_type]:
                 entities_by_name[entity.get('code')] = entity
@@ -3696,6 +3698,8 @@ class flameMenuPublisher(flameMenuApp):
         # controls and entites fits within menu size
         # we do not need additional page switch controls
             for menu_item in menu_main_body:
+                menu_item['order'] = menu_item_order
+                menu_item_order += 1
                 menu['actions'].append(menu_item)
 
         else:
@@ -3709,6 +3713,8 @@ class flameMenuPublisher(flameMenuApp):
                 menu_item = {}
                 menu_item['name'] = '<<[ prev page ' + str(curr_page) + ' of ' + str(num_of_pages) + ' ]'
                 menu_item['execute'] = self.page_bkw
+                menu_item['order'] = menu_item_order
+                menu_item_order += 1
                 menu['actions'].append(menu_item)
 
             # calculate the start and end position of a window
@@ -3719,6 +3725,8 @@ class flameMenuPublisher(flameMenuApp):
             end_index = window_size*curr_page+window_size + ((curr_page+1) // num_of_pages)
 
             for menu_item in menu_main_body[start_index:end_index]:
+                menu_item['order'] = menu_item_order
+                menu_item_order += 1
                 menu['actions'].append(menu_item)
             
             # decorate bottom with move forward control
@@ -3727,6 +3735,8 @@ class flameMenuPublisher(flameMenuApp):
                 menu_item = {}
                 menu_item['name'] = '[ next page ' + str(curr_page+2) + ' of ' + str(num_of_pages) + ' ]>>'
                 menu_item['execute'] = self.page_fwd
+                menu_item['order'] = menu_item_order
+                menu_item_order += 1
                 menu['actions'].append(menu_item)
 
         return menu
@@ -5057,89 +5067,47 @@ class flameMenuPublisher(flameMenuApp):
         self.prefs['additional menu ' + batch_name] = add_list
 
     def get_entities(self, user_only = True, filter_out=[]):
-        
-        # get current tasks form async cache
-
-        cached_tasks = self.connector.cache_retrive_result('current_tasks')
-
-        if not isinstance(cached_tasks, list):
-            return {}
-
-        # remove tasks without entities and filter if user_only
-        
-        user_id = 0
-        if self.connector.sg_human_user:
-            user_id = self.connector.sg_human_user.get('id', 0)
-        tasks = []
-        for cached_task in cached_tasks:
-            if not cached_task.get('entity'):
-                continue
-            if user_only:
-                if not cached_task.get('task_assignees'):
-                    continue
-                else:
-                    task_assignees_ids = [assignee.get('id') for assignee in cached_task.get('task_assignees', [])]
-                    if user_id not in task_assignees_ids:
-                        continue
-
-            tasks.append(cached_task)            
-
-        # group entities by id
-
-        entities_by_id = {task.get('entity').get('id'):task.get('entity') for task in tasks}
-        
-        shots = []
-        assets = []
-        for entity_id in sorted(entities_by_id.keys()):
-            entity = entities_by_id.get(entity_id)
-            if entity.get('type') == 'Shot':
-                shots.append({'code': entity.get('name'), 'id': entity_id, 'type': 'Shot'})
-            elif entity.get('type') == 'Asset':
-                assets.append({'code': entity.get('name'), 'id': entity_id, 'type': 'Asset'})
-        
-        return {'Asset': assets, 'Shot': shots}
-        
-        '''
-        sg = self.connector.sg
-
-        project_id = self.connector.sg_linked_project_id
-        task_filters = [['project.Project.id', 'is', project_id]]
-
         if user_only:
-            human_user = sg.find_one('HumanUser', 
-                [['login', 'is', self.connector.sg_user.login]],
-                []
-                )
-            task_filters.append(['task_assignees', 'is', human_user])
-
-        tasks = sg.find('Task',
-            task_filters,
-            ['entity']
-        )
-
-        entities = {}
-        for task in tasks:
-            if task['entity']:
-                task_entity_type = task['entity']['type']
-                task_entity_id = task['entity']['id']
-                if task_entity_type not in entities.keys():
-                    entities[task_entity_type] = []
-                entities[task_entity_type].append(task_entity_id)
-
-        found_entities = {}
-        for entity_type in entities.keys():
-            if entity_type in filter_out:
-                continue
-            filters = ['id', 'in']
-            filters.extend(entities.get(entity_type))
-            found_by_type = sg.find(entity_type, 
-                [ filters ],
-                ['code']
-            )
-            found_entities[entity_type] = list(found_by_type)
-
-        return found_entities
-        '''
+            cached_tasks = self.connector.pipeline_data.get('project_tasks_for_person')
+            if not isinstance(cached_tasks, list):
+                # try to collect pipeline data in foreground
+                self.connector.collect_pipeline_data()
+                cached_tasks = self.connector.pipeline_data('project_tasks_for_person')
+                if not isinstance(cached_tasks, list):
+                    # give up
+                    return {}
+            if not cached_tasks:
+                return {}
+            else:
+                cached_tasks_by_entity_id = {x.get('entity_id'):x for x in cached_tasks}
+                entities = {'Shot': [], 'Asset': []}
+                shots = self.connector.pipeline_data.get('all_shots_for_project')
+                if not shots:
+                    shots = []
+                for shot in shots:
+                    if shot.get('id') in cached_tasks_by_entity_id.keys():
+                        entities['Shot'].append(shot)
+                assets = self.connector.pipeline_data.get('all_assets_for_project')
+                if not assets:
+                    assets = []
+                for asset in assets:
+                    if asset.get('id') in cached_tasks_by_entity_id.keys():
+                        entities['Asset'].append(asset)
+                return entities
+        else:
+            shots = self.connector.pipeline_data.get('all_shots_for_project')
+            if not isinstance(shots, list):
+                self.connector.collect_pipeline_data()
+                shots = self.connector.pipeline_data.get('all_shots_for_project')
+                if not shots:
+                    shots = []
+            assets = self.connector.pipeline_data.get('all_assets_for_project')
+            if not isinstance(assets, list):
+                self.connector.collect_pipeline_data()
+                assets = self.connector.pipeline_data.get('all_assets_for_project')
+                if not assets:
+                    assets = []
+            return {'Shot': shots, 'Asset': assets}
 
     def build_flame_friendly_path(self, path):
         import glob
