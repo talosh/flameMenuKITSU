@@ -23,6 +23,37 @@ DEBUG = True
 
 shot_code_field = '30_dl_vfx_id'
 
+default_templates = {
+    'Shot': {
+        'flame_render': {
+            'default': '{Project}/scenes/{Sequence}/{Shot}/{TaskType}/publish/{Shot}_{name}_v{version}/{Shot}_{name}_v{version}.{frame}.{ext}',
+            'PublishedFileType': 'Flame Render'
+            },
+        'flame_batch': {
+            'default': '{Project}/scenes/{Sequence}/{Shot}/{TaskType}/publish/flame_batch/{Shot}_{name}_v{version}.batch',
+            'PublishedFileType': 'Flame Batch File'                  
+            },
+        'version_name': {
+            'default': '{Shot}_{name}_v{version}',
+        },
+        'fields': ['{Project}','{Sequence}', '{Shot}', '{TaskType}', '{name}', '{version}', '{version_four}', '{frame}', '{ext}']
+    },
+    'Asset':{
+        'flame_render': {
+            'default': 'assets/{sg_asset_type}/{Asset}/{Step}/publish/{Asset}_{name}_v{version}/{Asset}_{name}_v{version}.{frame}.{ext}',
+            'PublishedFileType': 'Flame Render'
+            },
+        'flame_batch': {
+            'default': 'assets/{sg_asset_type}/{Asset}/{Step}/publish/flame_batch/{Asset}_{name}_v{version}.batch',
+            'PublishedFileType': 'Flame Batch File'                  
+            },
+        'version_name': {
+            'default': '{Asset}_{name}_v{version}',
+        },
+        'fields': ['{Project}', '{Sequence}', '{AssetType}', '{Asset}', '{TaskType}', '{name}', '{version}', '{version_four}', '{frame}', '{ext}']
+    }
+}
+
 default_templates_zou = {
     "working": {
         "mountpoint": "/media",
