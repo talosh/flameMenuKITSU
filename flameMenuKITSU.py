@@ -892,8 +892,6 @@ class flameKitsuConnector(object):
             else:
                 self.loop_timeout(timeout, start)
 
-            # pprint (len(self.pipeline_data.get('all_tasks_for_person_for_linked_project')))
-
     def collect_pipeline_data(self, current_project = None, current_client = None):
         if not current_project:
             current_project = {'id': self.linked_project_id}
@@ -2585,7 +2583,7 @@ class flameMenuNewBatch(flameMenuApp):
         if not self.prefs.master.get(self.name):
             self.prefs['show_all'] = True
             self.prefs['current_page'] = 0
-            self.prefs['menu_max_items_per_page'] = 128
+            self.prefs['menu_max_items_per_page'] = 64
 
             self.prefs['last_sequence_used'] = {}
 
@@ -3491,7 +3489,7 @@ class flameMenuPublisher(flameMenuApp):
         if not self.prefs.master.get(self.name):
             self.prefs['show_all'] = True
             self.prefs['current_page'] = 0
-            self.prefs['menu_max_items_per_page'] = 128
+            self.prefs['menu_max_items_per_page'] = 32
             self.prefs['templates'] = default_templates
 
             # init values from default
@@ -5067,6 +5065,8 @@ class flameMenuPublisher(flameMenuApp):
         self.prefs['additional menu ' + batch_name] = add_list
 
     def get_entities(self, user_only = True, filter_out=[]):
+        start = time.time()
+   
         if user_only:
             cached_tasks = self.connector.pipeline_data.get('project_tasks_for_person')
             if not isinstance(cached_tasks, list):
@@ -5108,6 +5108,8 @@ class flameMenuPublisher(flameMenuApp):
                 if not assets:
                     assets = []
             return {'Shot': shots, 'Asset': assets}
+
+        
 
     def build_flame_friendly_path(self, path):
         import glob
