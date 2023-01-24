@@ -825,6 +825,7 @@ class flameKitsuConnector(object):
         self.pipeline_data['tasks_by_entity_id'] = {}
         self.pipeline_data['preview_by_task_id'] = {}
         self.pipeline_data['all_task_types_for_project'] = []
+        self.pipeline_data['all_task_statuses_for_project'] = []
         self.pipeline_data['entity_by_id'] = {}
 
     def cache_short_loop(self, timeout):
@@ -1038,6 +1039,12 @@ class flameKitsuConnector(object):
             except Exception as e:
                 self.log(pformat(e))
 
+        def all_task_statuses_for_project():
+            try:
+                all_task_types_for_project = self.connector.gazu.task.all_task_statuses_for_project(current_project, client=current_client)
+                self.pipeline_data['all_task_statuses_for_project'] = all_task_types_for_project
+            except Exception as e:
+                self.log(pformat(e))
 
         requests = []
         requests.append(threading.Thread(target=project_tasks_for_person, args=()))
@@ -1046,6 +1053,7 @@ class flameKitsuConnector(object):
         requests.append(threading.Thread(target=all_shots_for_project, args=()))
         requests.append(threading.Thread(target=all_sequences_for_project, args=()))
         requests.append(threading.Thread(target=all_task_types_for_project, args=()))
+        requests.append(threading.Thread(target=all_task_statuses_for_project, args=()))
 
         for request in requests:
             request.daemon = True
@@ -1094,6 +1102,9 @@ class flameKitsuConnector(object):
                     self.pipeline_data['active_projects'] = [{}]
             except Exception as e:
                 self.log(pformat(e))
+
+    def resolve_storage_root(self):
+        return '/meida/dirtylooks_vfx'
 
 
 class flameMenuProjectconnect(flameMenuApp):
@@ -3590,15 +3601,12 @@ class flameMenuPublisher(flameMenuApp):
             self.prefs['current_page'] = 0
             self.prefs['menu_max_items_per_page'] = 32
             self.prefs['templates'] = default_templates
-
             # init values from default
-            '''
             for entity_type in self.prefs['templates'].keys():
                 for template in self.prefs['templates'][entity_type].keys():
                     if isinstance(self.prefs['templates'][entity_type][template], dict):
                         if 'default' in self.prefs['templates'][entity_type][template].keys():
                             self.prefs['templates'][entity_type][template]['value'] = self.prefs['templates'][entity_type][template]['default']
-            '''
          
             self.prefs['flame_export_presets'] = default_flame_export_presets
             self.prefs['poster_frame'] = 1
@@ -4032,6 +4040,8 @@ class flameMenuPublisher(flameMenuApp):
                 publish_entity = {}
                 publish_entity['caller'] = 'publish'
                 publish_entity['task'] = task
+                publish_entity['entity'] = entity
+                publish_entity['parent'] = self.connector.pipeline_data['entity_by_id'].get(entity.get('parent_id'))
                 self.dynamic_menu_data[str(id(publish_entity))] = publish_entity
                 menu_item['execute'] = getattr(self, str(id(publish_entity)))
                 menu_item['waitCursor'] = False
@@ -4042,9 +4052,6 @@ class flameMenuPublisher(flameMenuApp):
         return menu
 
     def publish(self, entity, selection):
-
-        print ('Main publishing function')
-        return
         
         # Main publishing function
 
@@ -4057,7 +4064,7 @@ class flameMenuPublisher(flameMenuApp):
         # connector takes care of storage root check and selection
         # we're going to get empty path if connector was not able to resolve it
 
-        project_path = self.connector.resolve_project_path()
+        project_path = self.connector.resolve_storage_root()
 
         if not project_path:
         #    message = 'Publishing stopped: Unable to resolve project path.'
@@ -4152,7 +4159,6 @@ class flameMenuPublisher(flameMenuApp):
         mbox.setStyleSheet('QLabel{min-width: 500px;}')
         mbox.exec_()
 
-        
         return True
 
     def publish_clip(self, clip, entity, project_path, preset_fields):
@@ -4194,21 +4200,21 @@ class flameMenuPublisher(flameMenuApp):
         self.log_debug('\n%s' % pformat(entity))
 
         task = entity.get('task')
-        task_entity = task.get('entity')
+        task_entity = entity.get('entity')
         task_entity_type = task_entity.get('type')
-        task_entity_name = task_entity.get('name')
+        task_entity_name = task_entity.get('code')
         task_entity_id = task_entity.get('id')
-        task_step = task.get('step.Step.code')
-        task_step_code = task.get('step.Step.short_name')
+        task_step = task.get('task_type_name')
+        task_step_code = task.get('task_type_name')
         if not task_step_code:
             task_step_code = task_step.upper()
-        sequence = task.get('entity.Shot.sg_sequence')
+        sequence = entity.get('parent')
         if not sequence:
             sequence_name = 'NoSequence'
         else:
             sequence_name = sequence.get('name', 'NoSequence')
         sg_asset_type = task.get('entity.Asset.sg_asset_type','NoType')
-        uid = self.create_uid()    
+        uid = self.create_uid()
         
         # linked .batch file path resolution
         # if the clip consists of several clips with different linked batch setups
@@ -4291,11 +4297,12 @@ class flameMenuPublisher(flameMenuApp):
             sg_frame = '%' + '{:02d}'.format(preset_fields.get('framePadding')) + 'd'
 
         template_fields = {}
+        template_fields['Project'] = self.connector.linked_project
         template_fields['Shot'] = task_entity_name
         template_fields['Asset'] = task_entity_name
         template_fields['sg_asset_type'] = sg_asset_type
         template_fields['name'] = clip_name
-        template_fields['Step'] = task_step
+        template_fields['TaskType'] = task_step
         template_fields['Step_code'] = task_step_code
         template_fields['Sequence'] = sequence_name
         template_fields['version'] = '{:03d}'.format(version_number)
@@ -4317,7 +4324,8 @@ class flameMenuPublisher(flameMenuApp):
         update_version_thumbnail = True
         pb_info['version_name'] = version_name
 
-        self.log_debug('resolved version name: %s' % version_name)  
+        self.log_debug('resolved version name: %s' % version_name)
+
         
         # 'flame_render'
         # start with flame_render publish first.
@@ -4347,20 +4355,20 @@ class flameMenuPublisher(flameMenuApp):
         # get PublishedFileType from Shotgun
         # if it is not there - create it
         flame_render_type = self.prefs.get('templates', {}).get(task_entity_type, {}).get('flame_render', {}).get('PublishedFileType', '')
-        self.log_debug('PublishedFile type: %s, querying ShotGrid' % flame_render_type)
-        published_file_type = self.connector.sg.find_one('PublishedFileType', filters=[["code", "is", flame_render_type]])
-        self.log_debug('PublishedFile type: found: %s' % pformat(published_file_type))        
-        if not published_file_type:
-            self.log_debug('creating PublishedFile type %s' % flame_render_type)
-            published_file_type = self.connector.sg.create("PublishedFileType", {"code": flame_render_type})
-            self.log_debug('created: %s' % pformat(published_file_type))
+        # self.log_debug('PublishedFile type: %s, querying ShotGrid' % flame_render_type)
+        # published_file_type = self.connector.sg.find_one('PublishedFileType', filters=[["code", "is", flame_render_type]])
+        # self.log_debug('PublishedFile type: found: %s' % pformat(published_file_type))        
+        # if not published_file_type:
+        #    self.log_debug('creating PublishedFile type %s' % flame_render_type)
+        #    published_file_type = self.connector.sg.create("PublishedFileType", {"code": flame_render_type})
+        #    self.log_debug('created: %s' % pformat(published_file_type))
 
         # fill the pb_info data for 'flame_render'
         pb_info['flame_render']['path_cache'] = path_cache
         pb_info['flame_render']['pb_file_name'] = pb_file_name
 
         # check if we're adding publishes to existing version
-
+        '''
         if self.connector.sg.find('Version', [
             ['entity', 'is', task_entity], 
             ['code', 'is', version_name],
@@ -4421,7 +4429,7 @@ class flameMenuPublisher(flameMenuApp):
                     return (pb_info, False)
                 else:
                     return (pb_info, True)
-
+        '''
         # Export section
 
         original_clip_name = clip.name.get_value()
@@ -4632,29 +4640,28 @@ class flameMenuPublisher(flameMenuApp):
             clip.out_mark.set_value(clip_out_mark)
             clip.name.set_value(original_clip_name)
 
-            # Create version in Shotgun
 
-        self.log_debug('creating version in ShotGrid')
+        # Create version in Shotgun
 
+        self.log_debug('creating new comment in Kitsu')
         self.progress.show()
-        self.progress.set_progress(version_name, 'Creating version...')
+        self.progress.set_progress(version_name, 'Creating comment...')
 
-        version_data = dict(
-            project = {'type': 'Project', 'id': self.connector.sg_linked_project_id},
-            code = version_name,
-            #description=item.description,
-            entity = task_entity,
-            sg_task = {'type': 'Task', 'id': task.get('id')},
-            #sg_path_to_frames=path
-        )
-        version = {}
+        task_status = {'id': task.get('task_status_id')}
+
         try:
-            version = self.connector.sg.create('Version', version_data)
-            self.log_debug('created Version: \n%s' % pformat(version))
+            kitsu_comment = self.connector.gazu.task.add_comment(
+                task,
+                task_status,
+                version_name,
+                person = self.connector.user,
+                client = self.connector.gazu_client
+                )
+            self.log_debug('created comment: \n%s' % pformat(comment))
         except Exception as e:
             self.progress.hide()
             mbox = QtWidgets.QMessageBox()
-            mbox.setText('Error creating published file in ShotGrid')
+            mbox.setText('Error creating comment in Kitsu')
             mbox.setDetailedText(pformat(e))
             mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
             # mbox.setStyleSheet('QLabel{min-width: 400px;}')
@@ -4666,6 +4673,7 @@ class flameMenuPublisher(flameMenuApp):
             else:
                 return (pb_info, True)        
 
+        '''
         if os.path.isfile(thumbnail_path) and update_version_thumbnail:
             self.log_debug('uploading thumbnail %s' % thumbnail_path)
             self.progress.set_progress(version_name, 'Uploading thumbnail...')
@@ -4685,19 +4693,30 @@ class flameMenuPublisher(flameMenuApp):
                     return (pb_info, False)
                 else:
                     return (pb_info, True)
+        '''
 
         if os.path.isfile(preview_path) and update_version_preview:
             self.log_debug('uploading preview %s' % preview_path)
             self.progress.set_progress(version_name, 'Uploading preview...')
             try:
-                self.connector.sg.upload('Version', version.get('id'), preview_path, 'sg_uploaded_movie')
+                self.connector.gazu.task.add_preview(
+                    task,
+                    kitsu_comment,
+                    preview_path,
+                    client = self.connector.gazu_client
+                )
             except:
                 try:
-                    self.connector.sg.upload('Version', version.get('id'), preview_path, 'sg_uploaded_movie')
+                    self.connector.gazu.task.add_preview(
+                        task,
+                        kitsu_comment,
+                        preview_path,
+                        client = self.connector.gazu_client
+                    )
                 except Exception as e:
                     self.progress.hide()
                     mbox = QtWidgets.QMessageBox()
-                    mbox.setText('Error uploading version preview to ShotGrid')
+                    mbox.setText('Error uploading preview to Kitsu')
                     mbox.setDetailedText(pformat(e))
                     mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
                     # mbox.setStyleSheet('QLabel{min-width: 400px;}')
@@ -4710,7 +4729,7 @@ class flameMenuPublisher(flameMenuApp):
                         return (pb_info, True)
 
         # Create 'flame_render' PublishedFile
-
+        '''
         self.log_debug('creating flame_render published file in ShotGrid')
 
         published_file_data = dict(
@@ -4766,7 +4785,7 @@ class flameMenuPublisher(flameMenuApp):
                     return (pb_info, False)
                 else:
                     return (pb_info, True)        
-
+        '''
         pb_info['status'] = True
 
         # check what we've actually exported and get start and end frames from there
@@ -4819,7 +4838,7 @@ class flameMenuPublisher(flameMenuApp):
                         flame_file_name = "%s%s%s" % (match.group(1), frame_spec, ext)
                         flame_path = os.path.join(export_dir, flame_file_name)
 
-                        self.connector.sg.update('Version', version.get('id'), {'sg_first_frame': min_frame, 'sg_last_frame': max_frame})
+                        # self.connector.sg.update('Version', version.get('id'), {'sg_first_frame': min_frame, 'sg_last_frame': max_frame})
 
             pb_info['flame_render']['flame_path'] = flame_path
         
@@ -4868,9 +4887,7 @@ class flameMenuPublisher(flameMenuApp):
                     return (pb_info, True)
 
         if linked_batch_path:
-
             self.progress.set_progress(version_name, 'Copying linked batch...')
-
             self.log_debug('copying linked .batch file')
             self.log_debug('from %s' % linked_batch_path)
             self.log_debug('to %s' % export_path)
@@ -4906,6 +4923,7 @@ class flameMenuPublisher(flameMenuApp):
             self.progress.set_progress(version_name, 'Saving current batch...')
             self.flame.batch.save_setup(str(export_path))
 
+        '''
         # get published file type for Flame Batch or create a published file type on the fly
 
         flame_batch_type = self.prefs.get('templates', {}).get(task_entity_type, {}).get('flame_batch', {}).get('PublishedFileType', '')
@@ -4986,7 +5004,7 @@ class flameMenuPublisher(flameMenuApp):
                     return (pb_info, False)
                 else:
                     return (pb_info, True)
-
+        '''
         # clean-up preview and thumbnail files
 
         self.log_debug('cleaning up preview and thumbnail files')
@@ -5031,7 +5049,7 @@ class flameMenuPublisher(flameMenuApp):
                 self.label.setMaximumSize(QtCore.QSize(40, 40))
                 self.label.setAlignment(QtCore.Qt.AlignCenter)
                 self.label.setStyleSheet("color: #989898; border: 2px solid #4679A4; border-radius: 20px;") 
-                self.label.setText('[SG]')
+                self.label.setText('[K]')
                 # self.label.setPixmap(QtGui.QPixmap(":/tk_flame_basic/shotgun_logo_blue.png"))
                 self.label.setScaledContents(True)
                 self.label.setObjectName("label")
