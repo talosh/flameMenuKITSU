@@ -15,7 +15,7 @@ import re
 from pprint import pprint
 from pprint import pformat
 
-__version__ = 'v0.0.1 dev 008'
+__version__ = 'v0.0.1 dev 009'
 
 menu_group_name = 'KITSU'
 app_name = 'flameMenuKITSU'
@@ -3938,6 +3938,8 @@ class flameMenuPublisher(flameMenuApp):
             menu['actions'].append(menu_item)
 
         current_steps = self.connector.pipeline_data.get('all_task_types_for_project')
+        print ('current steps:')
+        pprint (current_steps)
         entity_steps = [x for x in current_steps if x.get('for_entity') == entity_type]
         entity_steps_by_code = {step.get('name'):step for step in entity_steps}
         current_step_names = tasks_by_step.keys()
@@ -4596,9 +4598,14 @@ class flameMenuPublisher(flameMenuApp):
             # )
             # preset_path = os.path.join(preset_dir, 'Generate Preview.xml')
             preset_path = os.path.join(self.framework.prefs_folder, 'GeneratePreview.xml')
-            clip.name.set_value(version_name + '_preview_' + uid)
+            # clip.name.set_value(version_name + '_preview_' + uid)
             export_dir = '/var/tmp'
-            preview_path = os.path.join(export_dir, version_name + '_preview_' + uid + '.mov')
+            # preview_path = os.path.join(export_dir, version_name + '_preview_' + uid + '.mov')
+            preview_path = os.path.join(export_dir, version_name + '.mov')
+            try:
+                os.remove(preview_path)
+            except:
+                pass
 
             self.log_debug('exporting preview %s' % clip.name.get_value())
             self.log_debug('with preset: %s' % preset_path)
@@ -4608,7 +4615,8 @@ class flameMenuPublisher(flameMenuApp):
                 exporter.export(clip, preset_path, export_dir,  hooks=ExportHooks())
             except:
                 pass
-
+            
+            '''
             # Set clip in and out marks and export thumbnail to temp folder
 
             # preset_dir = self.flame.PyExporter.get_presets_dir(
@@ -4635,6 +4643,7 @@ class flameMenuPublisher(flameMenuApp):
                 exporter.export(clip, preset_path, export_dir,  hooks=ExportHooks())
             except:
                 pass
+            '''
             
             clip.in_mark.set_value(clip_in_mark)
             clip.out_mark.set_value(clip_out_mark)
@@ -4698,13 +4707,16 @@ class flameMenuPublisher(flameMenuApp):
         if os.path.isfile(preview_path) and update_version_preview:
             self.log_debug('uploading preview %s' % preview_path)
             self.progress.set_progress(version_name, 'Uploading preview...')
+            time.sleep(0.1)
+            self.progress.set_progress(version_name, 'Uploading preview...')
             try:
-                self.connector.gazu.task.add_preview(
+                kitsu_preview_response = self.connector.gazu.task.add_preview(
                     task,
                     kitsu_comment,
                     preview_path,
                     client = self.connector.gazu_client
                 )
+                self.log_debug('response for uploading preview %s' % pformat(kitsu_preview_response))
             except:
                 try:
                     self.connector.gazu.task.add_preview(
@@ -5008,11 +5020,10 @@ class flameMenuPublisher(flameMenuApp):
         # clean-up preview and thumbnail files
 
         self.log_debug('cleaning up preview and thumbnail files')
-
         self.progress.set_progress(version_name, 'Cleaning up...')
 
         try:
-            os.remove(thumbnail_path)
+            # os.remove(thumbnail_path)
             os.remove(preview_path)
         except:
             self.log_debug('cleaning up failed')
