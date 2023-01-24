@@ -3616,10 +3616,8 @@ class flameMenuPublisher(flameMenuApp):
             entity = self.dynamic_menu_data.get(name)
             if entity:
                 if entity.get('caller') == 'build_addremove_menu':
-                    self.show_bug_message()
                     self.update_loader_list(entity)
                 elif entity.get('caller') == 'flip_assigned_for_entity':
-                    self.show_bug_message()
                     self.flip_assigned_for_entity(entity)
                 elif entity.get('caller') == 'fold_step_entity':
                     self.fold_step_entity(entity)
@@ -3627,7 +3625,6 @@ class flameMenuPublisher(flameMenuApp):
                     self.fold_task_entity(entity)
                 elif entity.get('caller') == 'publish':
                     self.publish(entity, args[0])
-                    self.connector.bootstrap_toolkit()
             self.rescan()
             self.progress.hide()
         return method
@@ -3875,21 +3872,6 @@ class flameMenuPublisher(flameMenuApp):
         else:
             human_user = self.connector.user
 
-        '''
-        cached_tasks_query = self.connector.async_cache.get('current_tasks')
-        cached_tasks_by_entity = cached_tasks_query.get('by_entity') if cached_tasks_query else False
-        tasks = cached_tasks_by_entity.get(entity_key, []) if cached_tasks_by_entity else []
-
-        cached_versions_query = self.connector.async_cache.get('current_versions')
-        cached_versions_by_entity = cached_versions_query.get('by_entity') if cached_versions_query else False
-        versions = cached_versions_by_entity.get(entity_key, []) if cached_versions_by_entity else []
-
-        cached_pbfiles_query = self.connector.async_cache.get('current_pbfiles')
-        cached_pbfiles_by_entity = cached_pbfiles_query.get('by_entity') if cached_pbfiles_query else False
-        pbfiles = cached_pbfiles_by_entity.get(entity_key, []) if cached_pbfiles_by_entity else []
-
-        '''
-
         menu = {}
         menu['name'] = self.menu_group_name + ' Publish ' + entity.get('code') + ':'
         menu['actions'] = []
@@ -4027,94 +4009,22 @@ class flameMenuPublisher(flameMenuApp):
                 task_id = task.get('id')
                 task_versions = preview_by_task_id.get(task_id)
 
-                pprint (task_versions)
-
-
-        return menu
-
-        '''
-
-                task_versions = []
-                task_pbfiles = []
-
-                for v in versions:
-                    if task_id == v.get('sg_task.Task.id'):
-                        task_versions.append(v)
-                for p in pbfiles:
-                    if task_id == p.get('task.Task.id'):
-                        task_pbfiles.append(p)
-
                 version_names = []
-                version_name_lenghts = set()
-                
-                if len(task_versions) < 2:
-                    for version in task_versions:
-                        version_names.append('* ' + version.get('code'))
-                else:
-                    
-                    # group Published Files by Published File Type id and name pair
-                    # find the latest Published File for that pair
-                    # get the set of ids for versions linked to Published Files
+                version_names_set = set()
 
-                    pbfiles_version_ids = set()
-                    pbfile_type_id_name_group = {}
-                    pbfile_type_id_name_datetime = {}
-                    pbfile_type_id_name_count = {}
+                for version in task_versions:
+                    version_names_set.add('* ' + version.get('original_name'))
 
-                    for pbfile in task_pbfiles:
-                        
-                        pbfile_version_id = pbfile.get('version.Version.id')
-                        if pbfile_version_id: pbfiles_version_ids.add(pbfile_version_id)
-                        
-                        pbfile_id = 0
-                        pbfile_type = pbfile.get('published_file_type')
-                        if isinstance(pbfile_type, dict):
-                            pbfile_id = pbfile_type.get('id')
-                        pbfile_name = pbfile.get('name')
-                        pbfile_created_at = pbfile.get('created_at')
-                        pbfile_type_id_name_key = (pbfile_id, pbfile_name)
-                        if pbfile_type_id_name_key not in pbfile_type_id_name_group.keys():
-                            pbfile_type_id_name_group[pbfile_type_id_name_key] = pbfile
-                            pbfile_type_id_name_datetime[pbfile_type_id_name_key] = pbfile_created_at
-                            pbfile_type_id_name_count[pbfile_type_id_name_key] = 1
-                        else:
-                            if pbfile_created_at > pbfile_type_id_name_datetime.get(pbfile_type_id_name_key):
-                                pbfile_type_id_name_group[pbfile_type_id_name_key] = pbfile
-                                pbfile_type_id_name_datetime[pbfile_type_id_name_key] = pbfile_created_at
-                                pbfile_type_id_name_count[pbfile_type_id_name_key] += 1
-
-                    version_names_set = set()
-                    
-                    # collect 'loose' versions vithout published files into separate list
-                    # and add them to version names
-                    loose_versions = []
-                    for version in task_versions:
-                        if version.get('id') not in pbfiles_version_ids:
-                            loose_versions.append(version)
-                                                            
-                    if len(loose_versions) > 3:
-                        first = loose_versions[0].get('code')
-                        last = loose_versions[-1].get('code')
-                        version_names.append(' '*3 + first)
-                        version_names.append(' '*8 + ' '*(max(len(first), len(last))//2 - 4) + '. . . . .')
-                        version_names.append(' '*3 + last)
-                    else:
-                        for loose_version in loose_versions:
-                            version_names.append(' '*3 + loose_version.get('code'))
-
-                    for key in pbfile_type_id_name_group.keys():
-                        pbfile = pbfile_type_id_name_group.get(key)
-                        if pbfile.get('version.Version.code'):
-                            version_names_set.add(pbfile.get('version.Version.code'))
-
-                    for name in sorted(version_names_set):
-                        version_names.append('* ' + name)
+                for name in sorted(version_names_set):
+                    version_names.append('* ' + name)
 
                 for version_name in version_names:
                     menu_item = {}
                     menu_item['name'] = ' '*8 + version_name
                     menu_item['execute'] = self.rescan
                     menu_item['isEnabled'] = False
+                    menu_item['order'] = menu_item_order
+                    menu_item_order += 1
                     menu['actions'].append(menu_item)
                 
                 menu_item = {}
@@ -4125,12 +4035,16 @@ class flameMenuPublisher(flameMenuApp):
                 self.dynamic_menu_data[str(id(publish_entity))] = publish_entity
                 menu_item['execute'] = getattr(self, str(id(publish_entity)))
                 menu_item['waitCursor'] = False
+                menu_item['order'] = menu_item_order
+                menu_item_order += 1
                 menu['actions'].append(menu_item)
-        '''
                 
         return menu
 
     def publish(self, entity, selection):
+
+        print ('Main publishing function')
+        return
         
         # Main publishing function
 
@@ -5249,8 +5163,6 @@ class flameMenuPublisher(flameMenuApp):
                 if not assets:
                     assets = []
             return {'Shot': shots, 'Asset': assets}
-
-        
 
     def build_flame_friendly_path(self, path):
         import glob
