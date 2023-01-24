@@ -19,7 +19,7 @@ __version__ = 'v0.0.1'
 
 menu_group_name = 'KITSU'
 app_name = 'flameMenuKITSU'
-DEBUG = True
+DEBUG = False
 
 shot_code_field = '30_dl_vfx_id'
 
