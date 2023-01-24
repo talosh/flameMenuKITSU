@@ -554,13 +554,7 @@ class flameKitsuConnector(object):
         self.linked_project = None
         self.linked_project_id = None
 
-        self.pipeline_data = {}
-        self.pipeline_data['project_tasks_for_person'] = []
-        self.pipeline_data['all_episodes_for_project'] = []
-        self.pipeline_data['all_sequences_for_project'] = []
-        self.pipeline_data['all_shots_for_project'] = []
-        self.pipeline_data['all_assets_for_project'] = []
-
+        self.init_pipeline_data()
         self.shot_code_field = shot_code_field
 
         self.check_linked_project()
@@ -568,6 +562,7 @@ class flameKitsuConnector(object):
         self.loops = []
         self.threads = True
         self.loops.append(threading.Thread(target=self.cache_short_loop, args=(8, )))
+        self.loops.append(threading.Thread(target=self.cache_long_loop, args=(8, )))
 
         for loop in self.loops:
             loop.daemon = True
@@ -819,6 +814,19 @@ class flameKitsuConnector(object):
                 self.log_debug('no project id found for project name: %s' % flame.project.current_project.shotgun_project_name)
         return True
 
+    def init_pipeline_data(self):
+        self.pipeline_data = {}
+        self.pipeline_data['project_tasks_for_person'] = []
+        self.pipeline_data['all_episodes_for_project'] = []
+        self.pipeline_data['all_sequences_for_project'] = []
+        self.pipeline_data['all_shots_for_project'] = []
+        self.pipeline_data['all_assets_for_project'] = []
+        self.pipeline_data['entitiy_keys'] = set()
+        self.pipeline_data['tasks_by_entity_id'] = {}
+        self.pipeline_data['preview_by_task_id'] = {}
+        self.pipeline_data['all_task_types_for_project'] = []
+        self.pipeline_data['entity_by_id'] = {}
+
     def cache_short_loop(self, timeout):
         avg_delta = timeout / 2
         recent_deltas = [avg_delta]*9
@@ -826,7 +834,6 @@ class flameKitsuConnector(object):
             start = time.time()                
             
             if (not self.user) and (not self.linked_project_id):
-                print ('short loop: no user and id')
                 time.sleep(1)
                 continue
 
@@ -892,6 +899,55 @@ class flameKitsuConnector(object):
             else:
                 self.loop_timeout(timeout, start)
 
+    def cache_long_loop(self, timeout):
+        avg_delta = timeout / 2
+        recent_deltas = [avg_delta]*9
+        while self.threads:
+            start = time.time()
+
+            if (not self.user) and (not self.linked_project_id):
+                time.sleep(1)
+                continue
+
+            longloop_gazu_client = None
+            try:
+                host = self.kitsu_host
+                if not host.endswith('/api/'):
+                    if self.kitsu_host.endswith('/'):
+                        host = host + 'api/'
+                    else:
+                        host = host + '/api/'
+                elif host.endswith('/api'):
+                    host = host + ('/')
+                longloop_gazu_client = self.gazu.client.create_client(host)
+                self.gazu.log_in(self.kitsu_user, self.kitsu_pass, client=longloop_gazu_client)
+
+                # main job body
+                for entity_key in self.pipeline_data.get('entitiy_keys'):
+                    self.collect_entity_linked_info(entity_key, current_client = longloop_gazu_client)
+                
+            except Exception as e:
+                self.log_debug('error updating cache in cache_long_loop: %s' % e)
+
+            self.gazu.log_out(client = longloop_gazu_client)
+            
+            # self.preformat_common_queries()
+
+            self.log('cache_long_loop took %s sec' % str(time.time() - start))
+            delta = time.time() - start
+            last_delta = recent_deltas[len(recent_deltas) - 1]
+            recent_deltas.pop(0)
+            
+            if abs(delta - last_delta) > last_delta*3:
+                delta = last_delta*3
+
+            recent_deltas.append(delta)
+            avg_delta = sum(recent_deltas)/float(len(recent_deltas))
+            if avg_delta > timeout/2:
+                self.loop_timeout(avg_delta*2, start)
+            else:
+                self.loop_timeout(timeout, start)
+
     def collect_pipeline_data(self, current_project = None, current_client = None):
         if not current_project:
             current_project = {'id': self.linked_project_id}
@@ -907,18 +963,25 @@ class flameKitsuConnector(object):
                     if x.get('project_id') == self.linked_project_id:
                         project_tasks_for_person.append(x)
                 self.pipeline_data['project_tasks_for_person'] = project_tasks_for_person
+                for task in project_tasks_for_person:
+                    self.pipeline_data['entitiy_keys'].add((task.get('entity_type_name'), task.get('entity_id')))
             except Exception as e:
                 self.log(pformat(e))
 
         def all_episodes_for_project():
             try:
-                self.pipeline_data['all_episodes_for_project'] = self.gazu.shot.all_episodes_for_project(current_project, client=current_client)
+                all_episodes_for_project = self.gazu.shot.all_episodes_for_project(current_project, client=current_client)
+                if not isinstance(all_episodes_for_project, list):
+                    all_episodes_for_project = []
+                self.pipeline_data['all_episodes_for_project'] = all_episodes_for_project
+                for entity in all_episodes_for_project:
+                    self.pipeline_data['entitiy_keys'].add((entity.get('type'), entity.get('id')))
+                    self.pipeline_data['entity_by_id'][entity.get('id')] = entity
             except Exception as e:
                 self.log(pformat(e))
 
         def all_assets_for_project():
             try:
-                '''
                 assets_with_modified_code = []
                 all_assets_for_project = self.gazu.asset.all_assets_for_project(current_project, client=current_client)
                 for asset in all_assets_for_project:
@@ -930,8 +993,11 @@ class flameKitsuConnector(object):
                             if code:
                                 asset['code'] = code
                     assets_with_modified_code.append(asset)
-                '''
-                self.pipeline_data['all_assets_for_project'] = self.gazu.asset.all_assets_for_project(current_project, client=current_client)
+                
+                self.pipeline_data['all_assets_for_project'] = list(assets_with_modified_code)
+                for entity in assets_with_modified_code:
+                    self.pipeline_data['entitiy_keys'].add((entity.get('type'), entity.get('id')))
+                    self.pipeline_data['entity_by_id'][entity.get('id')] = entity
             except Exception as e:
                 self.log(pformat(e))
 
@@ -949,14 +1015,29 @@ class flameKitsuConnector(object):
                                 shot['code'] = code
                     shots_with_modified_code.append(shot)
                 self.pipeline_data['all_shots_for_project'] = list(shots_with_modified_code)
+                for entity in shots_with_modified_code:
+                    self.pipeline_data['entitiy_keys'].add((entity.get('type'), entity.get('id')))
+                    self.pipeline_data['entity_by_id'][entity.get('id')] = entity
             except Exception as e:
                 self.log(pformat(e))
 
         def all_sequences_for_project():
             try:
-                self.pipeline_data['all_sequences_for_project'] = self.gazu.shot.all_sequences_for_project(current_project, client=current_client)
+                all_sequences_for_project = self.gazu.shot.all_sequences_for_project(current_project, client=current_client)
+                self.pipeline_data['all_sequences_for_project'] = all_sequences_for_project
+                for entity in all_sequences_for_project:
+                    self.pipeline_data['entitiy_keys'].add((entity.get('type'), entity.get('id')))
+                    self.pipeline_data['entity_by_id'][entity.get('id')] = entity
             except Exception as e:
                 self.log(pformat(e))
+
+        def all_task_types_for_project():
+            try:
+                all_task_types_for_project = self.connector.gazu.task.all_task_types_for_project(current_project, client=current_client)
+                self.pipeline_data['all_task_types_for_project'] = all_task_types_for_project
+            except Exception as e:
+                self.log(pformat(e))
+
 
         requests = []
         requests.append(threading.Thread(target=project_tasks_for_person, args=()))
@@ -964,6 +1045,7 @@ class flameKitsuConnector(object):
         requests.append(threading.Thread(target=all_assets_for_project, args=()))
         requests.append(threading.Thread(target=all_shots_for_project, args=()))
         requests.append(threading.Thread(target=all_sequences_for_project, args=()))
+        requests.append(threading.Thread(target=all_task_types_for_project, args=()))
 
         for request in requests:
             request.daemon = True
@@ -971,6 +1053,21 @@ class flameKitsuConnector(object):
 
         for request in requests:
             request.join()
+
+    def collect_entity_linked_info(self, entity_key, current_client = None):
+        if not current_client:
+            current_client = self.gazu_client
+
+        entity_type, entity_id = entity_key
+
+        if entity_type == 'Shot':
+            shot_tasks = self.gazu.task.all_tasks_for_shot({'id': entity_id}, client = current_client)
+            self.pipeline_data['tasks_by_entity_id'][entity_id] = shot_tasks
+            for task in shot_tasks:
+                task_preview_files = self.gazu.files.get_all_preview_files_for_task(
+                    {'id': task.get('id')},
+                    client = current_client)
+                self.pipeline_data['preview_by_task_id'][task.get('id')] = task_preview_files
 
     def terminate_loops(self):
         self.threads = False
@@ -1138,9 +1235,11 @@ class flameMenuProjectconnect(flameMenuApp):
         self.flame.project.current_project.shotgun_project_name = ''
         self.connector.linked_project = None
         self.connector.linked_project_id = None
+        self.connector.init_pipeline_data()
         self.rescan()
 
     def link_project(self, project):
+        self.connector.init_pipeline_data()
         project_name = project.get('name')
         if project_name:
             self.flame.project.current_project.shotgun_project_name = project_name
@@ -3601,14 +3700,12 @@ class flameMenuPublisher(flameMenuApp):
             action['isVisible'] = self.scope_clip
         menus.append(add_remove_menu)
         
-        '''
         for entity in add_menu_list:
             publish_menu = self.build_publish_menu(entity)
             if publish_menu:
                 # for action in publish_menu['actions']:
                 #     action['isVisible'] = self.scope_clip
                 menus.append(publish_menu)
-        '''
 
         return menus
 
@@ -3740,6 +3837,9 @@ class flameMenuPublisher(flameMenuApp):
         return menu
 
     def build_publish_menu(self, entity):
+        
+        # pprint (self.connector.pipeline_data.get('entity_by_id').get(entity.get('parent_id')))
+
         if not entity.get('code'):
             entity['code'] = entity.get('name', 'no_name')
         
@@ -3750,6 +3850,32 @@ class flameMenuPublisher(flameMenuApp):
             self.prefs[entity_key] = {}
             self.prefs[entity_key]['show_all'] = True
 
+        tasks_by_entity_id = self.connector.pipeline_data.get('tasks_by_entity_id')
+
+        if not tasks_by_entity_id:
+            tasks_by_entity_id = {}
+
+        if not entity_id in tasks_by_entity_id.keys():
+            # try to collect data
+            self.connector.collect_entity_linked_info(entity_key)
+            if not entity_id in tasks_by_entity_id.keys():
+                # something went wrong
+                tasks = []
+            else:
+                tasks = tasks_by_entity_id.get(entity_id)
+        else:
+            tasks = tasks_by_entity_id.get(entity_id)
+
+        preview_by_task_id = self.connector.pipeline_data.get('preview_by_task_id')
+        if not preview_by_task_id:
+            preview_by_task_id = {}
+
+        if not self.connector.user:
+            human_user = {'id': 0}
+        else:
+            human_user = self.connector.user
+
+        '''
         cached_tasks_query = self.connector.async_cache.get('current_tasks')
         cached_tasks_by_entity = cached_tasks_query.get('by_entity') if cached_tasks_query else False
         tasks = cached_tasks_by_entity.get(entity_key, []) if cached_tasks_by_entity else []
@@ -3762,17 +3888,18 @@ class flameMenuPublisher(flameMenuApp):
         cached_pbfiles_by_entity = cached_pbfiles_query.get('by_entity') if cached_pbfiles_query else False
         pbfiles = cached_pbfiles_by_entity.get(entity_key, []) if cached_pbfiles_by_entity else []
 
-        if not self.connector.sg_human_user:
-            human_user = {'id': 0}
-        else:
-            human_user = self.connector.sg_human_user
+        '''
 
         menu = {}
         menu['name'] = self.menu_group_name + ' Publish ' + entity.get('code') + ':'
         menu['actions'] = []
+        menu_item_order = 0
+
 
         menu_item = {}
         menu_item['name'] = '~ Rescan'
+        menu_item['order'] = menu_item_order
+        menu_item_order += 1
         menu_item['execute'] = self.rescan
         menu['actions'].append(menu_item)
 
@@ -3785,25 +3912,23 @@ class flameMenuPublisher(flameMenuApp):
         else:
             menu_item['name'] = '~ Show All Tasks'
 
+        menu_item['order'] = menu_item_order
+        menu_item_order += 1
         self.dynamic_menu_data[str(id(show_all_entity))] = show_all_entity
         menu_item['execute'] = getattr(self, str(id(show_all_entity)))
         menu['actions'].append(menu_item)
 
         tasks_by_step = {}
         for task in tasks:
-            task_assignees = task.get('task_assignees')
-            user_ids = []
-            if task_assignees:
-                for user in task_assignees:
-                    user_ids.append(user.get('id'))
+            task_assignees = task.get('assignees')
             if not self.prefs[entity_key]['show_all']:
-                if human_user.get('id') not in user_ids:
+                if human_user.get('id') not in task_assignees:
                     continue
-
-            step_name = task.get('step.Step.code')
+            
+            step_name = task.get('task_type_name')
             if not step_name:
                 step_name = ''
-            step_id = task.get('step.Step.id')
+            step_id = task.get('task_type_id')
 
             if step_name not in tasks_by_step.keys():
                 tasks_by_step[step_name] = []
@@ -3815,21 +3940,24 @@ class flameMenuPublisher(flameMenuApp):
                 menu_item['name'] = ' '*4 + 'No tasks found'
             else:
                 menu_item['name'] = ' '*4 + 'No assigned tasks found'
+
+            menu_item['order'] = menu_item_order
+            menu_item_order += 1
             menu_item['execute'] = self.rescan
             menu_item['isEnabled'] = False
-            menu['actions'].append(menu_item)            
+            menu['actions'].append(menu_item)
 
-        current_steps = self.connector.async_cache.get('current_steps').get('result', dict()).values()
-        entity_steps = [x for x in current_steps if x.get('entity_type') == entity_type]
-        entity_steps_by_code = {step.get('code'):step for step in entity_steps}
+        current_steps = self.connector.pipeline_data.get('all_task_types_for_project')
+        entity_steps = [x for x in current_steps if x.get('for_entity') == entity_type]
+        entity_steps_by_code = {step.get('name'):step for step in entity_steps}
         current_step_names = tasks_by_step.keys()
         current_step_order = []
         for step in current_step_names:
-            current_step_order.append(entity_steps_by_code.get(step, dict()).get('list_order'))
+            current_step_order.append(entity_steps_by_code.get(step, dict()).get('priority'))
 
         for step_name in (x for _, x in sorted(zip(current_step_order, current_step_names))):
             step_key = ('Step', step_name)
-            
+
             if step_key not in self.prefs[entity_key].keys():
                 self.prefs[entity_key][step_key] = {'isFolded': False}
 
@@ -3843,18 +3971,26 @@ class flameMenuPublisher(flameMenuApp):
 
             if self.prefs[entity_key][step_key].get('isFolded') and len(tasks_by_step[step_name]) != 1:
                 menu_item['name'] = '+ [ ' + step_name + ' ]'
+                menu_item['order'] = menu_item_order
+                menu_item_order += 1
                 menu['actions'].append(menu_item)
                 continue
             elif self.prefs[entity_key][step_key].get('isFolded') and tasks_by_step[step_name][0].get('content') != step_name:
                 menu_item['name'] = '+ [ ' + step_name + ' ]'
+                menu_item['order'] = menu_item_order
+                menu_item_order += 1
                 menu['actions'].append(menu_item)
                 continue
 
             if len(tasks_by_step[step_name]) != 1:
                 menu_item['name'] = '- [ ' + step_name + ' ]'
+                menu_item['order'] = menu_item_order
+                menu_item_order += 1
                 menu['actions'].append(menu_item)
             elif tasks_by_step[step_name][0].get('content') != step_name:
                 menu_item['name'] = '- [ ' + step_name + ' ]'
+                menu_item['order'] = menu_item_order
+                menu_item_order += 1
                 menu['actions'].append(menu_item)
 
             for task in tasks_by_step[step_name]:
@@ -3866,33 +4002,37 @@ class flameMenuPublisher(flameMenuApp):
                 fold_task_entity['caller'] = 'fold_task_entity'
                 fold_task_entity['key'] = task_key
                 self.dynamic_menu_data[str(id(fold_task_entity))] = fold_task_entity
-
-                # fill in template fields from task
-                task_Sequence = task.get('entity.Shot.sg_sequence', {})
-                task_Sequence_name = task_Sequence.get('name')
-                task_Shot = entity.get('code')
-                task_Asset = entity.get('code')
-                task_sg_Asset_type = task.get('entity.Asset.sg_asset_type')
-                task_Step = task.get('step.Step.code')
-                task_Step_code = task.get('step.Step.short_name')
                 
-                task_name = task.get('content')
+                task_name = task.get('task_type_name')
                 menu_item = {}
+
                 if (task_name == step_name) and (len(tasks_by_step[step_name]) == 1):
-                    if self.prefs[entity_key][task_key].get('isFolded'):
-                        menu_item['name'] = '+ [ ' + task_name + ' ]'
-                    else:
-                        menu_item['name'] = '- [ ' + task_name + ' ]'
+                    pass
+                    # if self.prefs[entity_key][task_key].get('isFolded'):
+                    #    menu_item['name'] = '+ [ ' + task_name + ' ]'
+                    # else:
+                    #    menu_item['name'] = '- [ ' + task_name + ' ]'
                 else:
                     if self.prefs[entity_key][task_key].get('isFolded'):
                         menu_item['name'] = ' '*4 + '+ [ ' + task_name + ' ]'
                     else:
                         menu_item['name'] = ' '*4 + '- [ ' + task_name + ' ]'
-                menu_item['execute'] = getattr(self, str(id(fold_task_entity)))
-                menu['actions'].append(menu_item)
+                    menu_item['execute'] = getattr(self, str(id(fold_task_entity)))
+                    menu_item['order'] = menu_item_order
+                    menu_item_order += 1
+                    menu['actions'].append(menu_item)
+
                 if self.prefs[entity_key][task_key].get('isFolded'): continue
 
                 task_id = task.get('id')
+                task_versions = preview_by_task_id.get(task_id)
+
+                pprint (task_versions)
+
+
+        return menu
+
+        '''
 
                 task_versions = []
                 task_pbfiles = []
@@ -3986,6 +4126,7 @@ class flameMenuPublisher(flameMenuApp):
                 menu_item['execute'] = getattr(self, str(id(publish_entity)))
                 menu_item['waitCursor'] = False
                 menu['actions'].append(menu_item)
+        '''
                 
         return menu
 
