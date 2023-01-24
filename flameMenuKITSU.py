@@ -15,7 +15,7 @@ import re
 from pprint import pprint
 from pprint import pformat
 
-__version__ = 'v0.0.1 dev 009'
+__version__ = 'v0.0.1'
 
 menu_group_name = 'KITSU'
 app_name = 'flameMenuKITSU'
@@ -1833,7 +1833,7 @@ class flameMenuProjectconnect(flameMenuApp):
 
         hbox_storage = QtWidgets.QHBoxLayout()
         storage_root_btn = QtWidgets.QPushButton(window)
-        storage_root_btn.setText('Set Project Location')
+        storage_root_btn.setText('MountPoint')
         
         storage_root_btn.setFocusPolicy(QtCore.Qt.NoFocus)
         storage_root_btn.setMinimumSize(199, 28)
@@ -3938,14 +3938,12 @@ class flameMenuPublisher(flameMenuApp):
             menu['actions'].append(menu_item)
 
         current_steps = self.connector.pipeline_data.get('all_task_types_for_project')
-        print ('current steps:')
-        pprint (current_steps)
         entity_steps = [x for x in current_steps if x.get('for_entity') == entity_type]
         entity_steps_by_code = {step.get('name'):step for step in entity_steps}
         current_step_names = tasks_by_step.keys()
         current_step_order = []
         for step in current_step_names:
-            current_step_order.append(entity_steps_by_code.get(step, dict()).get('priority'))
+            current_step_order.append(entity_steps_by_code.get(step, dict()).get('priority', 999))
 
         for step_name in (x for _, x in sorted(zip(current_step_order, current_step_names))):
             step_key = ('Step', step_name)
