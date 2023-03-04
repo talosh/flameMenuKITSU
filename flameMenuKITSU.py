@@ -187,6 +187,7 @@ class flameAppFramework(object):
     def __init__(self):
         self.name = self.__class__.__name__
         self.bundle_name = 'flameMenuKITSU'
+        self.version = __version__
         # self.prefs scope is limited to flame project and user
         self.prefs = {}
         self.prefs_user = {}
@@ -237,6 +238,15 @@ class flameAppFramework(object):
             }
 
         self.apps = []
+
+        # site-packages check and payload unpack if nessesary
+        self.site_packages_folder = os.path.join(
+            os.path.dirname(__file__),
+            '.site-packages'
+        )
+
+        if not self.check_bundle_id():
+            self.unpack_bundle()
 
     def log(self, message):
         print ('[%s] %s' % (self.bundle_name, message))
@@ -332,6 +342,34 @@ class flameAppFramework(object):
             
         return True
 
+    def check_bundle_id(self):
+        bundle_path = self.site_packages_folder
+        bundle_id_file_path = os.path.isfile(os.path.join(bundle_path, 'bundle_id'))
+        bundle_id = self.version
+
+        if (os.path.isdir(bundle_path) and os.path.isfile(bundle_id_file_path)):
+            self.log('checking existing bundle id %s' % bundle_id_file_path)
+            try:
+                with open(bundle_id_file_path, 'r') as bundle_id_file:
+                    if bundle_id_file.read() == bundle_id:
+                        self.log('site packages folder exists with id matching current version')
+                        bundle_id_file.close()
+                        return True
+                    else:
+                        self.log('existing env bundle id does not match current one')
+                        return False
+            except Exception as e:
+                self.log(pformat(e))
+                return False
+        elif not os.path.isdir(bundle_path):
+            self.log('site packages folder does not exist: %s' % bundle_path)
+            return False
+        elif not os.path.isfile(bundle_id_file_path):
+            self.log('site packages bundle id file does not exist: %s' % bundle_id_file_path)
+            return False
+
+    def unpack_bundle(self):
+        pass
 
 class flameMenuApp(object):
     def __init__(self, framework):
@@ -5896,3 +5934,9 @@ def get_batch_custom_ui_actions():
         print('batch menu update took %s' % (time.time() - start))
 
     return menu
+
+
+# bundle payload starts here
+'''
+BUNDLE_PAYLOAD
+'''
