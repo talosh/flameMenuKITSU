@@ -15,11 +15,13 @@ import re
 from pprint import pprint
 from pprint import pformat
 
-__version__ = 'v0.0.1'
+__version__ = 'v0.0.2 dev 001'
 
 menu_group_name = 'KITSU'
 app_name = 'flameMenuKITSU'
 DEBUG = False
+
+default_storage_root = '/media/dirtylooks_vfx'
 
 shot_code_field = '30_dl_vfx_id'
 
