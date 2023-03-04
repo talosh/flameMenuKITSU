@@ -540,7 +540,6 @@ class flameKitsuConnector(object):
         # defautl values are set here
         if not 'user signed out' in self.prefs_global.keys():
             self.prefs_global['user signed out'] = False
-        
 
         self.user = None
         self.user_name = None
@@ -551,6 +550,10 @@ class flameKitsuConnector(object):
                 self.get_user()
             except Exception as e:
                 self.log_debug(pformat(e))
+
+        if not self.prefs.get('storage_root'):
+            self.prefs['storage_root'] = default_storage_root
+            self.framework.save_prefs()
 
         self.flame_project = None
         self.linked_project = None
@@ -1106,7 +1109,8 @@ class flameKitsuConnector(object):
                 self.log(pformat(e))
 
     def resolve_storage_root(self):
-        return '/meida/dirtylooks_vfx'
+        storage_root = self.prefs.get('storage_root')
+        return storage_root
 
 
 class flameMenuProjectconnect(flameMenuApp):
