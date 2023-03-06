@@ -1,0 +1,86 @@
+from . import client as raw
+from . import cache
+from . import helpers
+from . import events
+
+from . import asset
+from . import casting
+from . import context
+from . import entity
+from . import files
+from . import project
+from . import person
+from . import shot
+from . import sync
+from . import task
+from . import user
+from . import playlist
+
+from .exception import (
+    AuthFailedException,
+    ParameterException,
+    NotAuthenticatedException,
+)
+from .__version__ import __version__
+
+
+def get_host(client=raw.default_client):
+    return raw.get_host(client=client)
+
+
+def set_host(url, client=raw.default_client):
+    raw.set_host(url, client=client)
+
+
+def log_in(email, password, client=raw.default_client):
+    tokens = {}
+    try:
+        tokens = raw.post(
+            "auth/login", {"email": email, "password": password}, client=client
+        )
+    except (NotAuthenticatedException, ParameterException):
+        pass
+
+    if not tokens or (
+        "login" in tokens and tokens.get("login", False) == False
+    ):
+        raise AuthFailedException
+    else:
+        raw.set_tokens(tokens, client=client)
+    return tokens
+
+
+def log_out(client=raw.default_client):
+    tokens = {}
+    try:
+        raw.get("auth/logout", client=client)
+    except ParameterException:
+        pass
+    raw.set_tokens(tokens, client=client)
+    return tokens
+
+
+def refresh_token(client=raw.default_client):
+    headers = {"User-Agent": "CGWire Gazu %s" % __version__}
+    if "refresh_token" in client.tokens:
+        headers["Authorization"] = "Bearer %s" % client.tokens["refresh_token"]
+
+    response = client.session.get(
+        raw.get_full_url("auth/refresh-token", client=client),
+        headers=headers,
+    )
+    raw.check_status(response, "auth/refresh-token")
+
+    tokens = response.json()
+
+    client.tokens["access_token"] = tokens["access_token"]
+
+    return tokens
+
+
+def get_event_host(client=raw.default_client):
+    return raw.get_event_host(client=client)
+
+
+def set_event_host(url, client=raw.default_client):
+    raw.set_event_host(url, client=client)
