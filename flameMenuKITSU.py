@@ -686,21 +686,21 @@ class flameMenuApp(object):
 
         video = preset_xml_doc.getElementsByTagName('video')
         if len(video) < 1:
-            message = 'flameMenuSG: XML parser error:\nUnable to find xml video tag in:\n%s' % preset_path
+            message = 'flameMenuKITSU: XML parser error:\nUnable to find xml video tag in:\n%s' % preset_path
             self.mbox.setText(message)
             self.mbox.exec_()
             return {}
         
         filetype = video[0].getElementsByTagName('fileType')
         if len(filetype) < 1:
-            message = 'flameMenuSG: XML parser error:\nUnable to find video::fileType tag in:\n%s' % preset_path
+            message = 'flameMenuKITSU: XML parser error:\nUnable to find video::fileType tag in:\n%s' % preset_path
             self.mbox.setText(message)
             self.mbox.exec_()
             return {}
 
         preset_fields['fileType'] = filetype[0].firstChild.data
         if preset_fields.get('fileType', '') not in flame_extension_map:
-            message = 'flameMenuSG:\nUnable to find extension corresponding to fileType:\n%s' % preset_fields.get('fileType', '')
+            message = 'flameMenuKITSU:\nUnable to find extension corresponding to fileType:\n%s' % preset_fields.get('fileType', '')
             self.mbox.setText(message)
             self.mbox.exec_()
             return {}
@@ -2007,7 +2007,7 @@ class flameMenuProjectconnect(flameMenuApp):
         # General::BatchLink default path button
 
         def batchLinkDefault():
-            self.framework.prefs['flameBatchBlessing']['flame_batch_root'] = '/var/tmp/flameMenuSG/flame_batch_setups'
+            self.framework.prefs['flameBatchBlessing']['flame_batch_root'] = '/var/tmp/flameMenuKITSU/flame_batch_setups'
             update_batchLinkPathLabel()
             self.framework.save_prefs()
         btn_batchLinkDefault = QtWidgets.QPushButton('Default', paneGeneral)
@@ -2892,7 +2892,7 @@ class flameBatchBlessing(flameMenuApp):
         
         # app defaults
         if not self.prefs.master.get(self.name):
-            self.prefs['flame_batch_root'] = '/var/tmp/flameMenuSG/flame_batch_setups'
+            self.prefs['flame_batch_root'] = '/var/tmp/flameMenuKITSU/flame_batch_setups'
             self.prefs['enabled'] = True
             self.prefs['use_project'] = True
 
@@ -4865,7 +4865,7 @@ class flameMenuPublisher(flameMenuApp):
         # self.connector.bootstrap_toolkit()
 
         mbox = self.mbox
-        mbox.setText('flameMenuSG: ' + msg)
+        mbox.setText('flameMenuKITSU: ' + msg)
 
         detailed_msg = ''
 
@@ -6462,7 +6462,7 @@ apps = []
 def exeption_handler(exctype, value, tb):
     from PySide2 import QtWidgets
     import traceback
-    msg = 'flameMenuSG: Python exception %s in %s' % (value, exctype)
+    msg = 'flameMenuKITSU: Python exception %s in %s' % (value, exctype)
     mbox = QtWidgets.QMessageBox()
     mbox.setText(msg)
     mbox.setDetailedText(pformat(traceback.format_exception(exctype, value, tb)))
@@ -6479,11 +6479,11 @@ def cleanup(apps, app_framework, kitsuConnector):
     
     if apps:
         if settings.get('debug', False):
-            print ('[DEBUG %s] unloading apps:\n%s' % ('flameMenuSG', pformat(apps)))
+            print ('[DEBUG %s] unloading apps:\n%s' % ('flameMenuKITSU', pformat(apps)))
         while len(apps):
             app = apps.pop()
             if settings.get('debug', False):
-                print ('[DEBUG %s] unloading: %s' % ('flameMenuSG', app.name))
+                print ('[DEBUG %s] unloading: %s' % ('flameMenuKITSU', app.name))
             del app        
         del apps
 
