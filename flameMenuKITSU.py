@@ -853,7 +853,7 @@ class flameKitsuConnector(object):
         try:
             from PySide2 import QtWidgets, QtCore
         except ImportError:
-            from PySide6 import QtWidgets, QtCore
+            from PySide6 import QtWidgets, QtCore, QtGui
 
         self.kitsu_host_text = self.kitsu_host
         self.kitsu_user_text = self.kitsu_user
@@ -877,7 +877,12 @@ class flameKitsuConnector(object):
         window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         window.setStyleSheet('background-color: #313131')
 
-        screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        if QtGui.__version_info__[0] < 6:
+            screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        else:
+            mainWindow = QtGui.QGuiApplication.primaryScreen()
+            screen_res = mainWindow.screenGeometry()
+        
         window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
 
         vbox1 = QtWidgets.QVBoxLayout()
@@ -1828,7 +1833,12 @@ class flameMenuProjectconnect(flameMenuApp):
         window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         window.setStyleSheet('background-color: #2e2e2e')
 
-        screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        if QtGui.__version_info__[0] < 6:
+            screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        else:
+            mainWindow = QtGui.QGuiApplication.primaryScreen()
+            screen_res = mainWindow.screenGeometry()
+
         window.move((screen_res.width()/2)-400, (screen_res.height() / 2)-180)
 
         # Prefs Pane widgets
@@ -3679,7 +3689,7 @@ class flameMenuNewBatch(flameMenuApp):
         try:
             from PySide2 import QtWidgets, QtCore
         except ImportError:
-            from PySide6 import QtWidgets, QtCore
+            from PySide6 import QtWidgets, QtCore, QtGui
 
         self.asset_name = ''
         flameMenuNewBatch_prefs = self.framework.prefs.get('flameMenuNewBatch', {})
@@ -3692,7 +3702,12 @@ class flameMenuNewBatch(flameMenuApp):
         window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         window.setStyleSheet('background-color: #313131')
 
-        screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        if QtGui.__version_info__[0] < 6:
+            screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        else:
+            mainWindow = QtGui.QGuiApplication.primaryScreen()
+            screen_res = mainWindow.screenGeometry()
+
         window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
 
         vbox = QtWidgets.QVBoxLayout()
@@ -3816,7 +3831,7 @@ class flameMenuNewBatch(flameMenuApp):
         try:
             from PySide2 import QtWidgets, QtCore
         except ImportError:
-            from PySide6 import QtWidgets, QtCore
+            from PySide6 import QtWidgets, QtCore, QtGui
 
         self.sequence_name = ''
         self.sequence_id = -1
@@ -3832,7 +3847,12 @@ class flameMenuNewBatch(flameMenuApp):
             window_NewSequnece.setAttribute(QtCore.Qt.WA_DeleteOnClose)
             window_NewSequnece.setStyleSheet('background-color: #313131')
 
-            screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+            if QtGui.__version_info__[0] < 6:
+                screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+            else:
+                mainWindow = QtGui.QGuiApplication.primaryScreen()
+                screen_res = mainWindow.screenGeometry()
+
             window_NewSequnece.move((screen_res.width()/2)-150, (screen_res.height() / 2)-280)
 
             vbox_NewSequnece = QtWidgets.QVBoxLayout()
@@ -3898,7 +3918,12 @@ class flameMenuNewBatch(flameMenuApp):
         window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         window.setStyleSheet('background-color: #313131')
 
-        screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        if QtGui.__version_info__[0] < 6:
+            screen_res = QtWidgets.QDesktopWidget().screenGeometry()
+        else:
+            mainWindow = QtGui.QGuiApplication.primaryScreen()
+            screen_res = mainWindow.screenGeometry()
+
         window.move((screen_res.width()/2)-150, (screen_res.height() / 2)-180)
 
         vbox = QtWidgets.QVBoxLayout()
