@@ -877,6 +877,7 @@ class flameKitsuConnector(object):
         window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         window.setStyleSheet('background-color: #313131')
 
+        print ('hello')
         if QtGui.__version_info__[0] < 6:
             screen_res = QtWidgets.QDesktopWidget().screenGeometry()
         else:
