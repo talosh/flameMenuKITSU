@@ -286,6 +286,46 @@ class flameAppFramework(object):
                 pass
 
     def load_prefs(self):
+        import pickle
+        
+        prefix = self.prefs_folder + os.path.sep + self.bundle_name
+        prefs_file_path = prefix + '.' + self.flame_user_name + '.' + self.flame_project_name + '.prefs'
+        prefs_user_file_path = prefix + '.' + self.flame_user_name  + '.prefs'
+        prefs_global_file_path = prefix + '.prefs'
+
+        try:
+            prefs_file = open(prefs_file_path, 'rb')
+            self.prefs = pickle.load(prefs_file)
+            prefs_file.close()
+            self.log_debug('preferences loaded from %s' % prefs_file_path)
+            self.log_debug('preferences contents:\n' + pformat(self.prefs))
+        except Exception as e:
+            self.log('unable to load preferences from %s' % prefs_file_path)
+            self.log_debug(e)
+
+        try:
+            prefs_file = open(prefs_user_file_path, 'rb')
+            self.prefs_user = pickle.load(prefs_file)
+            prefs_file.close()
+            self.log_debug('preferences loaded from %s' % prefs_user_file_path)
+            self.log_debug('preferences contents:\n' + pformat(self.prefs_user))
+        except Exception as e:
+            self.log('unable to load preferences from %s' % prefs_user_file_path)
+            self.log_debug(e)
+
+        try:
+            prefs_file = open(prefs_global_file_path, 'rb')
+            self.prefs_global = pickle.load(prefs_file)
+            prefs_file.close()
+            self.log_debug('preferences loaded from %s' % prefs_global_file_path)
+            self.log_debug('preferences contents:\n' + pformat(self.prefs_global))
+        except Exception as e:
+            self.log('unable to load preferences from %s' % prefs_global_file_path)
+            self.log_debug(e)
+
+        return True
+
+        '''
         import json
 
         prefix = self.prefs_folder + os.path.sep + self.bundle_name
@@ -326,8 +366,56 @@ class flameAppFramework(object):
             self.log_debug(e)
 
         return True
+        '''
     
     def save_prefs(self):
+        import pickle
+
+        if not os.path.isdir(self.prefs_folder):
+            try:
+                os.makedirs(self.prefs_folder)
+            except:
+                self.log('unable to create folder %s' % self.prefs_folder)
+                return False
+
+        prefix = self.prefs_folder + os.path.sep + self.bundle_name
+        prefs_file_path = prefix + '.' + self.flame_user_name + '.' + self.flame_project_name + '.prefs'
+        prefs_user_file_path = prefix + '.' + self.flame_user_name  + '.prefs'
+        prefs_global_file_path = prefix + '.prefs'
+
+        try:
+            prefs_file = open(prefs_file_path, 'wb')
+            pickle.dump(self.prefs, prefs_file)
+            prefs_file.close()
+            self.log_debug('preferences saved to %s' % prefs_file_path)
+            self.log_debug('preferences contents:\n' + pformat(self.prefs))
+        except Exception as e:
+            self.log('unable to save preferences to %s' % prefs_file_path)
+            self.log(e)
+
+        try:
+            prefs_file = open(prefs_user_file_path, 'wb')
+            pickle.dump(self.prefs_user, prefs_file)
+            prefs_file.close()
+            self.log_debug('preferences saved to %s' % prefs_user_file_path)
+            self.log_debug('preferences contents:\n' + pformat(self.prefs_user))
+        except:
+            self.log('unable to save preferences to %s' % prefs_user_file_path)
+            self.log(e)
+
+        try:
+            prefs_file = open(prefs_global_file_path, 'wb')
+            pickle.dump(self.prefs_global, prefs_file)
+            prefs_file.close()
+            self.log_debug('preferences saved to %s' % prefs_global_file_path)
+            self.log_debug('preferences contents:\n' + pformat(self.prefs_global))
+        except:
+            self.log('unable to save preferences to %s' % prefs_global_file_path)
+            self.log(e)
+            
+        return True
+
+        '''
         import json
 
         class TupleKeyEncoder(json.JSONEncoder):
@@ -385,6 +473,7 @@ class flameAppFramework(object):
             pprint (self.prefs)
 
         return True
+        '''
 
     def check_bundle_id(self):
         bundle_id_file_path = os.path.join(
