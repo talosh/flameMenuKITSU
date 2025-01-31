@@ -5775,9 +5775,13 @@ class flameMenuPublisher(flameMenuApp):
                     QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.X11BypassWindowManagerHint
                 )
 
-                # place it in the lower left corner of the primary screen
-                primary_screen = QtGui.QApplication.desktop().primaryScreen()
-                rect_screen = QtGui.QApplication.desktop().availableGeometry(primary_screen)
+                if QtGui.__version_info__[0] < 6:
+                    # place it in the lower left corner of the primary screen
+                    primary_screen = QtGui.QApplication.desktop().primaryScreen()
+                    rect_screen = QtGui.QApplication.desktop().availableGeometry(primary_screen)
+                else:
+                    primary_screen = QtGui.QApplication.primaryScreen()
+                    rect_screen = QtGui.QApplication.desktop().availableGeometry(primary_screen)
 
                 self.setGeometry(
                     ( rect_screen.left() + rect_screen.right() ) // 2 - self.PROGRESS_WIDTH // 2, 
