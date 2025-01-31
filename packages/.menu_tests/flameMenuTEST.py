@@ -1,6 +1,9 @@
 def get_media_panel_custom_ui_actions():
     def message(msg):
-        from PySide2 import QtWidgets
+        try:
+            from PySide2 import QtWidgets
+        except ImportError:
+            from PySide6 import QtWidgets
         mbox = QtWidgets.QMessageBox()
         mbox.setText(msg)
         mbox.exec_()
