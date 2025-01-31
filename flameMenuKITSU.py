@@ -530,8 +530,12 @@ class flameMenuApp(object):
         self.prefs_user = self.framework.prefs_dict(self.framework.prefs_user, self.name)
         self.prefs_global = self.framework.prefs_dict(self.framework.prefs_global, self.name)
 
-        from PySide2 import QtWidgets
-        self.mbox = QtWidgets.QMessageBox()
+        try:
+            from PySide2 import QtWidgets
+            self.mbox = QtWidgets.QMessageBox()
+        except ImportError:
+            from PySide6 import QtWidgets
+            self.mbox = QtWidgets.QMessageBox()
 
     @property
     def flame_extension_map(self):
@@ -751,8 +755,12 @@ class flameKitsuConnector(object):
             loop.daemon = True
             loop.start()
 
-        from PySide2 import QtWidgets
-        self.mbox = QtWidgets.QMessageBox()
+        try:
+            from PySide2 import QtWidgets
+            self.mbox = QtWidgets.QMessageBox()
+        except ImportError:
+            from PySide6 import QtWidgets
+            self.mbox = QtWidgets.QMessageBox()
 
     def log(self, message):
         self.framework.log('[' + self.name + '] ' + str(message))
@@ -842,7 +850,10 @@ class flameKitsuConnector(object):
         self.framework.save_prefs()
 
     def login_dialog(self):
-        from PySide2 import QtWidgets, QtCore
+        try:
+            from PySide2 import QtWidgets, QtCore
+        except ImportError:
+            from PySide6 import QtWidgets, QtCore
 
         self.kitsu_host_text = self.kitsu_host
         self.kitsu_user_text = self.kitsu_user
@@ -1625,8 +1636,11 @@ class flameMenuProjectconnect(flameMenuApp):
         # became a bit monstrous
         # Probably need to put it in subclass instead
 
-        from PySide2 import QtWidgets, QtCore, QtGui
-        
+        try:
+            from PySide2 import QtWidgets, QtCore, QtGui
+        except ImportError:
+            from PySide6 import QtWidgets, QtCore, QtGui
+
         # storage root section
         # self.connector.update_sg_storage_root()
 
@@ -3662,7 +3676,10 @@ class flameMenuNewBatch(flameMenuApp):
         self.flame.batch.organize()
 
     def create_asset_dialog(self, *args, **kwargs):
-        from PySide2 import QtWidgets, QtCore
+        try:
+            from PySide2 import QtWidgets, QtCore
+        except ImportError:
+            from PySide6 import QtWidgets, QtCore
 
         self.asset_name = ''
         flameMenuNewBatch_prefs = self.framework.prefs.get('flameMenuNewBatch', {})
@@ -3796,7 +3813,10 @@ class flameMenuNewBatch(flameMenuApp):
             return {}
 
     def create_shot_dialog(self, *args, **kwargs):
-        from PySide2 import QtWidgets, QtCore
+        try:
+            from PySide2 import QtWidgets, QtCore
+        except ImportError:
+            from PySide6 import QtWidgets, QtCore
 
         self.sequence_name = ''
         self.sequence_id = -1
@@ -4817,7 +4837,10 @@ class flameMenuPublisher(flameMenuApp):
         # along with the status. It is purely to be able
         # to inform user of the status after we processed multpile clips
 
-        from PySide2 import QtWidgets
+        try:
+            from PySide2 import QtWidgets
+        except ImportError:
+            from PySide6 import QtWidgets
 
         pb_info = {
             'flame_clip_name': clip.name.get_value(),        # name of the clip selected in flame
