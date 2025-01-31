@@ -1781,7 +1781,7 @@ class flameMenuProjectconnect(flameMenuApp):
             self.PresetVisibility = -1            
 
         def format_preset_details(export_preset_fields):
-            preset_path = export_preset_fields.get('path')
+            preset_path = export_preset_fields.get('path', '')
             preset_details = ''
             preset_details += 'Name: ' + os.path.basename(preset_path) + '\n'
             preset_details += 'File Type: ' + export_preset_fields.get('fileType') + ', '
