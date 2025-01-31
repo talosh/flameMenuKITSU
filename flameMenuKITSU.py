@@ -630,10 +630,12 @@ class flameMenuApp(object):
             preset_path = preset.get('PresetFile')
         else:
             path_prefix = self.flame.PyExporter.get_presets_dir(
-                self.flame.PyExporter.PresetVisibility.values.get(preset.get('PresetVisibility', 2)),
+                self.flame.PyExporter.PresetVisibility.values.get(preset.get('PresetVisibility', 0)),
                 self.flame.PyExporter.PresetType.values.get(preset.get('PresetType', 0))
             )
-            print (f'payth prefix: {path_prefix}')
+
+            print (f'path prefix: {path_prefix}')
+
             preset_file = preset.get('PresetFile', 'OpenEXR/OpenEXR (16-bit fp PIZ).xml')
             if preset_file.startswith(os.path.sep):
                 preset_file = preset_file[1:]
