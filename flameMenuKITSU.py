@@ -654,6 +654,8 @@ class flameMenuApp(object):
             preset_path = os.path.join(path_prefix, preset_file)
             '''
 
+        print (f'preset_path: {preset_path}')
+
         self.log_debug('parsing Flame export preset: %s' % preset_path)
         
         preset_xml_doc = None
