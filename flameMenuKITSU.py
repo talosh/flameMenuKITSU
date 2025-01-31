@@ -37,9 +37,6 @@ except Exception as e:
 if packages_folder in sys.path:
     sys.path.remove(packages_folder)
 
-print ('hello from flameMenuKITSU')
-print (f'gazu: {gazu.__version__}')
-
 # __version__ = 'v0.0.6 dev 001'
 # menu_group_name = 'KITSU'
 # app_name = 'flameMenuKITSU'
