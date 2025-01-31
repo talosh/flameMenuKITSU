@@ -630,7 +630,7 @@ class flameMenuApp(object):
             preset_path = preset.get('PresetFile')
         else:
             path_prefix = self.flame.PyExporter.get_presets_dir(
-                self.flame.PyExporter.PresetVisibility.values.get(preset.get('PresetVisibility', 0)),
+                self.flame.PyExporter.PresetVisibility.values.get(preset.get('PresetVisibility', 1)),
                 self.flame.PyExporter.PresetType.values.get(preset.get('PresetType', 0))
             )
 
@@ -650,7 +650,7 @@ class flameMenuApp(object):
             message = f'{settings["app_name"]}: Unable to parse xml export preset file:\n{e}'
             self.mbox.setText(message)
             self.mbox.exec_()
-            return False
+            return {}
 
         preset_fields['path'] = preset_path
 
