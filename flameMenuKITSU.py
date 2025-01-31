@@ -5062,7 +5062,6 @@ class flameMenuPublisher(flameMenuApp):
 
         self.log_debug('resolved version name: %s' % version_name)
 
-        
         # 'flame_render'
         # start with flame_render publish first.
 
@@ -5103,69 +5102,6 @@ class flameMenuPublisher(flameMenuApp):
         pb_info['flame_render']['path_cache'] = path_cache
         pb_info['flame_render']['pb_file_name'] = pb_file_name
 
-        # check if we're adding publishes to existing version
-        '''
-        if self.connector.sg.find('Version', [
-            ['entity', 'is', task_entity], 
-            ['code', 'is', version_name],
-            ['sg_task', 'is', {'type': 'Task', 'id': task.get('id')}]
-            ]):
-
-            self.log_debug('found existing version with the same name')
-
-            # do not update version thumbnail and preview
-            update_version_preview = False
-            update_version_thumbnail = False
-
-            # if it is a case:
-            # check if we already have published file of the same sg_published_file_type
-            # and with the same name and path_cache
-
-            task_published_files = self.connector.sg.find(
-                'PublishedFile',
-                [['task', 'is', {'type': 'Task', 'id': task.get('id')}]],
-                ['published_file_type', 
-                'path_cache', 
-                'name',
-                'version_number']
-            )
-
-            sg_pbf_type_flag = False
-            path_cache_flag = False
-            name_flag = False
-            version_number_flag = False
-
-            for task_published_file in task_published_files:
-                if task_published_file.get('published_file_type', {}).get('id') == published_file_type.get('id'):
-                    sg_pbf_type_flag = True
-                if task_published_file.get('name') == pb_file_name:
-                    name_flag = True
-                if task_published_file.get('version_number') == version_number:
-                    version_number_flag = True
-                if task_published_file.get('path_cache') == path_cache:
-                    path_cache_flag = True
-
-            if sg_pbf_type_flag and path_cache_flag and name_flag and version_number:
-
-                # we don't need to move down to .batch file publishing.
-                
-                # inform user that published file already exists:
-                mbox = QtWidgets.QMessageBox()
-                mbox.setText('Publish for flame clip %s\nalready exists in ShotGrid version %s' % (pb_info.get('flame_clip_name', ''), pb_info.get('version_name', '')))
-                detailed_msg = ''
-                detailed_msg += 'Path: ' + os.path.join(project_path, pb_info.get('flame_render', {}).get('path_cache', ''))
-                mbox.setDetailedText(detailed_msg)
-                mbox.setStandardButtons(QtWidgets.QMessageBox.Ok|QtWidgets.QMessageBox.Cancel)
-                # mbox.setStyleSheet('QLabel{min-width: 400px;}')
-                btn_Continue = mbox.button(QtWidgets.QMessageBox.Ok)
-                btn_Continue.setText('Continue')
-                mbox.exec_()
-
-                if mbox.clickedButton() == btn_Continue:
-                    return (pb_info, False)
-                else:
-                    return (pb_info, True)
-        '''
         # Export section
 
         original_clip_name = clip.name.get_value()
@@ -5221,6 +5157,8 @@ class flameMenuPublisher(flameMenuApp):
         '''
 
         preset_path = os.path.join(self.framework.prefs_folder, 'GenerateThumbnail.xml')
+        preset_path = self.create_export_preset(preset_path)
+
         clip.name.set_value(version_name + '_thumbnail_' + uid)
         export_dir = '/var/tmp'
         thumbnail_path = os.path.join(export_dir, version_name + '_thumbnail_' + uid + '.jpg')
@@ -5332,6 +5270,7 @@ class flameMenuPublisher(flameMenuApp):
             # )
             # preset_path = os.path.join(preset_dir, 'Generate Preview.xml')
             preset_path = os.path.join(self.framework.prefs_folder, 'GeneratePreview.xml')
+            preset_path = self.create_export_preset(preset_path)
             # clip.name.set_value(version_name + '_preview_' + uid)
             export_dir = '/var/tmp'
             # preview_path = os.path.join(export_dir, version_name + '_preview_' + uid + '.mov')
@@ -6019,6 +5958,93 @@ class flameMenuPublisher(flameMenuApp):
 
     def page_bkw(self, *args, **kwargs):
         self.prefs['current_page'] = max(self.prefs['current_page'] - 1, 0)
+
+    def create_export_preset(self, export_preset_path):
+        import flame
+
+        def find_files_with_all_path_patterns(directory, patterns):
+            import os
+            import fnmatch
+
+            matches = []
+            for root, dirnames, filenames in os.walk(directory):
+                for filename in filenames:
+                    full_path = os.path.join(root, filename)
+                    if all(fnmatch.fnmatch(full_path, pattern) for pattern in patterns):
+                        matches.append(full_path)
+            return matches
+
+        def find_version_in_file(file_path):
+            import os
+            import re
+            version_pattern = re.compile(r'<preset version="(\d+)">')
+            try:
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    for line in file:
+                        match = version_pattern.search(line)
+                        if match:
+                            return match.group(1)
+                return None
+            except (IOError, OSError) as e:
+                print(f"Error reading file {file_path}: {e}")
+                return None
+
+        def update_version_in_file(src_path, dest_path, new_version):
+            import os
+            import xml.etree.ElementTree as ET
+
+            try:
+                # Parse the source XML file
+                tree = ET.parse(src_path)
+                root = tree.getroot()
+
+                if 'version' in root.attrib:
+                    root.set('version', str(new_version))
+
+                # Write the updated XML to the destination file
+                tree.write(dest_path, encoding='utf-8', xml_declaration=True)
+
+                # print(f"Updated version in file saved to {dest_path}")
+                return dest_path
+            except ET.ParseError as e:
+                print(f"Error parsing XML file {src_path}: {e}")
+                return None
+            except (IOError, OSError) as e:
+                print(f"Error processing file: {e}")
+                return None
+
+        try:
+            flame_presets_location = flame.PyExporter.get_presets_base_dir(
+                        flame.PyExporter.PresetVisibility.Autodesk
+                    )
+            
+            matching_files = find_files_with_all_path_patterns(flame_presets_location, ['*OpenEXR*.xml', '*file*', '*sequence*'])
+            new_version = find_version_in_file(matching_files[0])
+
+            # print (f'new version: {new_version}')
+
+            dest_preset_path = os.path.join(
+                    '/var/tmp',
+                    os.path.basename(export_preset_path)
+                )
+            
+            if os.path.isfile(dest_preset_path):
+                # print (f'removing {dest_preset_path}')
+                os.remove(dest_preset_path)
+
+            preset_path = update_version_in_file(
+                export_preset_path,
+                dest_preset_path,
+                new_version
+            )
+
+            if preset_path:
+                return preset_path
+            else:
+                return export_preset_path
+
+        except:
+            return export_preset_path
 
     def create_export_presets(self):
 
