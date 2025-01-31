@@ -878,7 +878,7 @@ class flameKitsuConnector(object):
         window.setStyleSheet('background-color: #313131')
 
         print ('hello')
-        if QtGui.__version_info__[0] < 6:
+        if QtCore.__version_info__[0] < 6:
             screen_res = QtWidgets.QDesktopWidget().screenGeometry()
         else:
             mainWindow = QtGui.QGuiApplication.primaryScreen()
@@ -1834,7 +1834,7 @@ class flameMenuProjectconnect(flameMenuApp):
         window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         window.setStyleSheet('background-color: #2e2e2e')
 
-        if QtGui.__version_info__[0] < 6:
+        if QtCore.__version_info__[0] < 6:
             screen_res = QtWidgets.QDesktopWidget().screenGeometry()
         else:
             mainWindow = QtGui.QGuiApplication.primaryScreen()
@@ -3703,7 +3703,7 @@ class flameMenuNewBatch(flameMenuApp):
         window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         window.setStyleSheet('background-color: #313131')
 
-        if QtGui.__version_info__[0] < 6:
+        if QtCore.__version_info__[0] < 6:
             screen_res = QtWidgets.QDesktopWidget().screenGeometry()
         else:
             mainWindow = QtGui.QGuiApplication.primaryScreen()
@@ -3848,7 +3848,7 @@ class flameMenuNewBatch(flameMenuApp):
             window_NewSequnece.setAttribute(QtCore.Qt.WA_DeleteOnClose)
             window_NewSequnece.setStyleSheet('background-color: #313131')
 
-            if QtGui.__version_info__[0] < 6:
+            if QtCore.__version_info__[0] < 6:
                 screen_res = QtWidgets.QDesktopWidget().screenGeometry()
             else:
                 mainWindow = QtGui.QGuiApplication.primaryScreen()
@@ -3919,7 +3919,7 @@ class flameMenuNewBatch(flameMenuApp):
         window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         window.setStyleSheet('background-color: #313131')
 
-        if QtGui.__version_info__[0] < 6:
+        if QtCore.__version_info__[0] < 6:
             screen_res = QtWidgets.QDesktopWidget().screenGeometry()
         else:
             mainWindow = QtGui.QGuiApplication.primaryScreen()
@@ -5801,7 +5801,7 @@ class flameMenuPublisher(flameMenuApp):
                     QtCore.Qt.FramelessWindowHint | QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.X11BypassWindowManagerHint
                 )
 
-                if QtGui.__version_info__[0] < 6:
+                if QtCore.__version_info__[0] < 6:
                     # place it in the lower left corner of the primary screen
                     primary_screen = QtGui.QApplication.desktop().primaryScreen()
                     rect_screen = QtGui.QApplication.desktop().availableGeometry(primary_screen)
