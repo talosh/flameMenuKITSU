@@ -1642,6 +1642,13 @@ class flameMenuProjectconnect(flameMenuApp):
         self.rescan()
 
     def preferences_window(self, *args, **kwargs):
+        try:
+            self._preferences_window(*args, **kwargs)
+        except Exception as e:
+            print (e)
+            print(pformat(traceback.format_exc()))
+
+    def _preferences_window(self, *args, **kwargs):
 
         # The first attemt to draft preferences window in one function
         # became a bit monstrous
