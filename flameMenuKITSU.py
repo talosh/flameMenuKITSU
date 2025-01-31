@@ -330,6 +330,12 @@ class flameAppFramework(object):
     def save_prefs(self):
         import json
 
+        class TupleKeyEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, dict):
+                    return {json.dumps(k): v for k, v in obj.items()}  # Convert tuples to JSON strings
+                return super().default(obj)
+
         class TupleEncoder(json.JSONEncoder):
             def default(self, obj):
                 if isinstance(obj, tuple):
@@ -350,7 +356,7 @@ class flameAppFramework(object):
 
         try:
             with open(prefs_file_path, 'w') as prefs_file:
-                json.dump(self.prefs, prefs_file, cls=TupleEncoder, indent=4)
+                json.dump(self.prefs, prefs_file, cls=TupleKeyEncoder, indent=4)
             self.log_debug('preferences saved to %s' % prefs_file_path)
             self.log_debug('preferences contents:\n' + json.dumps(self.prefs, indent=4))
         except Exception as e:
@@ -360,7 +366,7 @@ class flameAppFramework(object):
 
         try:
             with open(prefs_user_file_path, 'w') as prefs_file:
-                json.dump(self.prefs_user, prefs_file, cls=TupleEncoder, indent=4)
+                json.dump(self.prefs_user, prefs_file, cls=TupleKeyEncoder, indent=4)
             self.log_debug('preferences saved to %s' % prefs_user_file_path)
             self.log_debug('preferences contents:\n' + json.dumps(self.prefs_user, indent=4))
         except Exception as e:
@@ -370,7 +376,7 @@ class flameAppFramework(object):
 
         try:
             with open(prefs_global_file_path, 'w') as prefs_file:
-                json.dump(self.prefs_global, prefs_file, cls=TupleEncoder, indent=4)
+                json.dump(self.prefs_global, prefs_file, cls=TupleKeyEncoder, indent=4)
             self.log_debug('preferences saved to %s' % prefs_global_file_path)
             self.log_debug('preferences contents:\n' + json.dumps(self.prefs_global, indent=4))
         except Exception as e:
