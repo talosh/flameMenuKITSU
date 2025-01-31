@@ -24,6 +24,7 @@ settings = {
 
 packages_folder = os.path.join(
     os.path.dirname(inspect.getfile(lambda: None)),
+    'packages',
     '.site-packages'
 )
 
