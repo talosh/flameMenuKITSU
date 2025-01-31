@@ -636,7 +636,7 @@ class flameMenuApp(object):
             for visibility in range(4):
                 export_preset_folder = flame.PyExporter.get_presets_dir(flame.PyExporter.PresetVisibility.values.get(visibility),
                                 flame.PyExporter.PresetType.values.get(0))
-                preset_path = os.path.join(export_preset_folder, 'OpenEXR', preset_file)
+                preset_path = os.path.join(export_preset_folder, preset_file)
                 if os.path.isfile(preset_path):
                     break
 
