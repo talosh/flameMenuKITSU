@@ -19,7 +19,7 @@ settings = {
     'menu_group_name': 'Kitsu',
     'debug': False,
     'app_name': 'flameMenuKITSU',
-    'version': 'v0.0.6 dev 001',
+    'version': 'v0.0.6',
 }
 
 packages_folder = os.path.join(
