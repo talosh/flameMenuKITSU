@@ -1882,7 +1882,8 @@ class flameMenuProjectconnect(flameMenuApp):
         btn_General.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
         btn_General.pressed.connect(pressGeneral)
         hbox_General.addWidget(btn_General)
-        vbox_apps.addLayout(hbox_General, alignment = QtCore.Qt.AlignLeft)
+        vbox_apps.addLayout(hbox_General)
+        vbox_apps.setAlignment(hbox_General, QtCore.Qt.AlignLeft)
 
         # Modules: flameMenuPublisher button
 
@@ -1894,7 +1895,8 @@ class flameMenuProjectconnect(flameMenuApp):
         btn_Publish.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
         btn_Publish.pressed.connect(pressPublish)
         hbox_Publish.addWidget(btn_Publish)
-        vbox_apps.addLayout(hbox_Publish, alignment = QtCore.Qt.AlignLeft)
+        vbox_apps.addLayout(hbox_Publish)
+        vbox_apps.setAlignment(hbox_Publish, QtCore.Qt.AlignLeft)
 
         # Modules: flameSuperclips button
 
@@ -1906,7 +1908,8 @@ class flameMenuProjectconnect(flameMenuApp):
         btn_Superclips.setStyleSheet('QPushButton {color: #989898; background-color: #373737; border-top: 1px inset #555555; border-bottom: 1px inset black}')
         btn_Superclips.pressed.connect(pressSuperclips)
         hbox_Superclips.addWidget(btn_Superclips)
-        vbox_apps.addLayout(hbox_Superclips, alignment = QtCore.Qt.AlignLeft)
+        vbox_apps.addLayout(hbox_Superclips)
+        vbox_apps.setAlignment(hbox_Superclips, QtCore.Qt.AlignLeft)
 
         # Modules: End of Modules section
         hbox_main.addLayout(vbox_apps)
@@ -2233,7 +2236,8 @@ class flameMenuProjectconnect(flameMenuApp):
         storage_root_btn.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
                                 'QPushButton:pressed {font:italic; color: #d9d9d9}')
         storage_root_btn.clicked.connect(change_storage_root_dialog)
-        hbox_storage.addWidget(storage_root_btn, alignment = QtCore.Qt.AlignLeft)
+        hbox_storage.addWidget(storage_root_btn)
+        hbox_storage.setAlignment(storage_root_btn, QtCore.Qt.AlignLeft)
 
         # storage_name = QtWidgets.QLabel('Pipeline configuration:', window)
         # hbox_storage.addWidget(storage_name, alignment = QtCore.Qt.AlignLeft)
@@ -2374,8 +2378,9 @@ class flameMenuProjectconnect(flameMenuApp):
         btn_changePreset.setStyleSheet('QPushButton {color: #9a9a9a; background-color: #424142; border-top: 1px inset #555555; border-bottom: 1px inset black}'
                                     'QPushButton:pressed {font:italic; color: #d9d9d9}')
         btn_changePreset.clicked.connect(changeExportPreset)
-        hbox_export_preset.addWidget(btn_changePreset, alignment = QtCore.Qt.AlignLeft)
-        
+        hbox_export_preset.addWidget(btn_changePreset)
+        hbox_export_preset.setAlignment(btn_changePreset, QtCore.Qt.AlignLeft)
+
         # Publish: ExportPresets: End of Change, Default buttons and preset name HBox
         vbox_export_preset.addLayout(hbox_export_preset)
 
