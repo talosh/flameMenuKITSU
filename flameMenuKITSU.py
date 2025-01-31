@@ -663,21 +663,21 @@ class flameMenuApp(object):
             message = 'flameMenuSG: XML parser error:\nUnable to find xml video tag in:\n%s' % preset_path
             self.mbox.setText(message)
             self.mbox.exec_()
-            return False
+            return {}
         
         filetype = video[0].getElementsByTagName('fileType')
         if len(filetype) < 1:
             message = 'flameMenuSG: XML parser error:\nUnable to find video::fileType tag in:\n%s' % preset_path
             self.mbox.setText(message)
             self.mbox.exec_()
-            return False
+            return {}
 
         preset_fields['fileType'] = filetype[0].firstChild.data
         if preset_fields.get('fileType', '') not in flame_extension_map:
             message = 'flameMenuSG:\nUnable to find extension corresponding to fileType:\n%s' % preset_fields.get('fileType', '')
             self.mbox.setText(message)
             self.mbox.exec_()
-            return False
+            return {}
         
         preset_fields['fileExt'] = flame_extension_map.get(preset_fields.get('fileType'))
 
