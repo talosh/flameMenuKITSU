@@ -337,6 +337,18 @@ class flameAppFramework(object):
         prefs_user_file_path = prefix + '.' + self.flame_user_name  + '.prefs.json'
         prefs_global_file_path = prefix + '.prefs.json'
 
+        def find_bytes_objects(data, path="root"):
+            if isinstance(data, dict):  # If it's a dictionary, walk through keys
+                for key, value in data.items():
+                    new_path = f"{path} -> {key}"
+                    find_bytes_objects(value, new_path)
+            elif isinstance(data, list):  # If it's a list, check each item
+                for index, item in enumerate(data):
+                    new_path = f"{path}[{index}]"
+                    find_bytes_objects(item, new_path)
+            elif isinstance(data, bytes):  # If it's bytes, print its path
+                print(f"Found bytes at: {path}, Type: {type(data)}")
+
         try:
             with open(prefs_file_path, 'w') as prefs_file:
                 json.dump(self.prefs, prefs_file, indent=4)
@@ -345,8 +357,7 @@ class flameAppFramework(object):
         except Exception as e:
             self.log('unable to save preferences to %s' % prefs_file_path)
             self.log(e)
-            for key, value in self.prefs.items():
-                print(f"Key: {key}, Type: {type(value)}")
+            find_bytes_objects(self.prefs)
 
         try:
             with open(prefs_user_file_path, 'w') as prefs_file:
@@ -356,8 +367,7 @@ class flameAppFramework(object):
         except Exception as e:
             self.log('unable to save preferences to %s' % prefs_user_file_path)
             self.log(e)
-            for key, value in self.prefs.items():
-                print(f"Key: {key}, Type: {type(value)}")
+            find_bytes_objects(self.prefs)
 
         try:
             with open(prefs_global_file_path, 'w') as prefs_file:
@@ -367,9 +377,8 @@ class flameAppFramework(object):
         except Exception as e:
             self.log('unable to save preferences to %s' % prefs_global_file_path)
             self.log(e)
-            for key, value in self.prefs.items():
-                print(f"Key: {key}, Type: {type(value)}")
-            
+            find_bytes_objects(self.prefs)
+
         return True
 
     def check_bundle_id(self):
