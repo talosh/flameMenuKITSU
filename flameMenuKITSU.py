@@ -346,8 +346,8 @@ class flameAppFramework(object):
                 for index, item in enumerate(data):
                     new_path = f"{path}[{index}]"
                     find_bytes_objects(item, new_path)
-            elif isinstance(data, bytes):  # If it's bytes, print its path
-                print(f"Found bytes at: {path}, Type: {type(data)}")
+            else:
+                print(f"{path}, Type: {type(data)}")
 
         try:
             with open(prefs_file_path, 'w') as prefs_file:
