@@ -17,7 +17,7 @@ from pprint import pprint, pformat
 
 settings = {
     'menu_group_name': 'Kitsu',
-    'debug': False,
+    'debug': True,
     'app_name': 'flameMenuKITSU',
     'version': 'v0.0.6 dev 001',
 }
@@ -6370,6 +6370,9 @@ def cleanup(apps, app_framework, kitsuConnector):
 atexit.register(cleanup, apps, app_framework, kitsuConnector)
 
 def load_apps(apps, app_framework, kitsuConnector):
+
+    print ('hello from load apps')
+
     try:
         apps.append(flameMenuProjectconnect(app_framework, kitsuConnector))
         apps.append(flameBatchBlessing(app_framework))
