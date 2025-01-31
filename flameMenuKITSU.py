@@ -641,7 +641,7 @@ class flameMenuApp(object):
         try:
             preset_xml_doc = minidom.parse(preset_path)
         except Exception as e:
-            message = 'flameMenuSG: Unable parse xml export preset file:\n%s' % e
+            message = f'{settings['app_name']}: Unable parse xml export preset file:\n{e}'
             self.mbox.setText(message)
             self.mbox.exec_()
             return False
