@@ -823,7 +823,7 @@ class flameKitsuConnector(object):
 
         self.prefs_user['kitsu_host'] = self.kitsu_host
         self.prefs_user['kitsu_user'] = self.kitsu_user
-        # self.prefs_user['kitsu_pass'] = base64.b64encode(self.kitsu_pass.encode("utf-8"))
+        self.prefs_user['kitsu_pass'] = base64.b64encode(self.kitsu_pass.encode("utf-8")).decode("utf-8")
         self.framework.save_prefs()
 
     def get_gazu_version(self):
