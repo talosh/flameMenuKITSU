@@ -17,7 +17,7 @@ from pprint import pprint, pformat
 
 settings = {
     'menu_group_name': 'Kitsu',
-    'debug': True,
+    'debug': False,
     'app_name': 'flameMenuKITSU',
     'version': 'v0.0.6 dev 001',
 }
