@@ -877,7 +877,6 @@ class flameKitsuConnector(object):
         window.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         window.setStyleSheet('background-color: #313131')
 
-        print ('hello')
         if QtCore.__version_info__[0] < 6:
             screen_res = QtWidgets.QDesktopWidget().screenGeometry()
         else:
@@ -972,7 +971,7 @@ class flameKitsuConnector(object):
         hbox4.addWidget(select_btn)
 
         vbox = QtWidgets.QVBoxLayout()
-        vbox.setMargin(20)
+        vbox.setContentsMargins(20, 20, 20, 20)
         vbox.addLayout(vbox1)
         vbox.addLayout(hbox4)
 
@@ -6423,9 +6422,6 @@ def cleanup(apps, app_framework, kitsuConnector):
 atexit.register(cleanup, apps, app_framework, kitsuConnector)
 
 def load_apps(apps, app_framework, kitsuConnector):
-
-    print ('hello from load apps')
-
     try:
         apps.append(flameMenuProjectconnect(app_framework, kitsuConnector))
         apps.append(flameBatchBlessing(app_framework))
