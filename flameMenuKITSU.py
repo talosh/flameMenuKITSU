@@ -344,7 +344,7 @@ class flameAppFramework(object):
             self.log_debug('preferences contents:\n' + json.dumps(self.prefs, indent=4))
         except Exception as e:
             self.log('unable to save preferences to %s' % prefs_file_path)
-            self.log_debug(e)
+            self.log(e)
 
         try:
             with open(prefs_user_file_path, 'w') as prefs_file:
@@ -353,7 +353,7 @@ class flameAppFramework(object):
             self.log_debug('preferences contents:\n' + json.dumps(self.prefs_user, indent=4))
         except Exception as e:
             self.log('unable to save preferences to %s' % prefs_user_file_path)
-            self.log_debug(e)
+            self.log(e)
 
         try:
             with open(prefs_global_file_path, 'w') as prefs_file:
@@ -362,7 +362,7 @@ class flameAppFramework(object):
             self.log_debug('preferences contents:\n' + json.dumps(self.prefs_global, indent=4))
         except Exception as e:
             self.log('unable to save preferences to %s' % prefs_global_file_path)
-            self.log_debug(e)
+            self.log(e)
             
         return True
 
@@ -630,6 +630,7 @@ class flameMenuApp(object):
                 self.flame.PyExporter.PresetVisibility.values.get(preset.get('PresetVisibility', 2)),
                 self.flame.PyExporter.PresetType.values.get(preset.get('PresetType', 0))
             )
+            print (f'payth prefix: {path_prefix}')
             preset_file = preset.get('PresetFile', 'OpenEXR/OpenEXR (16-bit fp PIZ).xml')
             if preset_file.startswith(os.path.sep):
                 preset_file = preset_file[1:]
