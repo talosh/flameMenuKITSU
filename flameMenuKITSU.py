@@ -262,6 +262,7 @@ class flameAppFramework(object):
 
         self.apps = []
 
+        '''
         # site-packages check and payload unpack if nessesary
         self.site_packages_folder = os.path.join(
             '/var/tmp',
@@ -271,6 +272,7 @@ class flameAppFramework(object):
 
         if not self.check_bundle_id():
             self.unpack_bundle(os.path.dirname(self.site_packages_folder))
+        '''
 
     def log(self, message):
         try:
