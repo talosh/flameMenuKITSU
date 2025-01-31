@@ -1637,6 +1637,7 @@ class flameMenuProjectconnect(flameMenuApp):
         
     def refresh(self, *args, **kwargs):        
         # self.connector.cache_retrive_result(self.active_projects_uid, True)
+        self.connector.collect_pipeline_data()
         self.rescan()
 
     def sign_in(self, *args, **kwargs):
@@ -2867,6 +2868,7 @@ class flameMenuProjectconnect(flameMenuApp):
                 self.flame = None
 
         # self.connector.cache_retrive_result(self.active_projects_uid, True)
+        self.connector.collect_pipeline_data()
 
         if self.flame:
             self.flame.execute_shortcut('Rescan Python Hooks')
@@ -3849,7 +3851,8 @@ class flameMenuNewBatch(flameMenuApp):
                 new_asset = self.connector.sg.create('Asset', data)
                 self.log_debug('new asset:\n%s' % pformat(new_asset))
                 self.log_debug('updating async cache for cuttent_tasks')
-                self.connector.cache_retrive_result('current_tasks', True)
+                self.connnector.collect_pipeline_data()
+                # self.connector.cache_retrive_result('current_tasks', True)
                 self.log_debug('creating new batch')
                 self.create_new_batch(new_asset)
 
@@ -4183,7 +4186,8 @@ class flameMenuNewBatch(flameMenuApp):
                 new_shot = self.connector.sg.create('Shot', data)
                 self.log_debug('new shot:\n%s' % pformat(new_shot))
                 self.log_debug('updating async cache for current tasks')
-                self.connector.cache_retrive_result('current_tasks', True)
+                self.connector.collect_pipeline_data()
+                # self.connector.cache_retrive_result('current_tasks', True)
                 self.log_debug('creating new batch')
                 self.create_new_batch(new_shot)
 
@@ -4300,7 +4304,8 @@ class flameMenuNewBatch(flameMenuApp):
             except:
                 self.flame = None
 
-        self.connector.cache_retrive_result('current_tasks', True)
+        # self.connector.cache_retrive_result('current_tasks', True)
+        self.connector.collect_pipeline_data()
 
         if self.flame:
             self.flame.execute_shortcut('Rescan Python Hooks')
