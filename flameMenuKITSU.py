@@ -15,11 +15,34 @@ import re
 import traceback
 from pprint import pprint, pformat
 
-__version__ = 'v0.0.6 dev 001'
+settings = {
+    'menu_group_name': 'Kitsu',
+    'debug': False,
+    'app_name': 'flameMenuKITSU',
+    'version': 'v0.0.6 dev 001',
+}
 
-menu_group_name = 'KITSU'
-app_name = 'flameMenuKITSU'
-DEBUG = False
+packages_folder = os.path.join(
+    os.path.dirname(inspect.getfile(lambda: None)),
+    '.site-packages'
+)
+
+if packages_folder not in sys.path:
+    sys.path.append(packages_folder)
+try:
+    import gazu
+except Exception as e:
+    print (f'[{settings.get("app_name")}]: Unable to import Gazu: {e}')
+if packages_folder in sys.path:
+    sys.path.remove(packages_folder)
+
+print ('hello from flameMenuKITSU')
+print (f'gazu: {gazu.__version__}')
+
+# __version__ = 'v0.0.6 dev 001'
+# menu_group_name = 'KITSU'
+# app_name = 'flameMenuKITSU'
+# DEBUG = False
 
 default_storage_root = '/media/dirtylooks_vfx'
 
@@ -188,12 +211,12 @@ class flameAppFramework(object):
         self.name = self.__class__.__name__
         self.app_name = kwargs.get('app_name', 'flameApp')
         self.bundle_name = self.sanitize_name(self.app_name)
-        self.version = __version__
+        self.version = settings['version']
         # self.prefs scope is limited to flame project and user
         self.prefs = {}
         self.prefs_user = {}
         self.prefs_global = {}
-        self.debug = DEBUG
+        self.debug = settings['debug']
         
         try:
             import flame
@@ -490,8 +513,8 @@ class flameMenuApp(object):
         self.name = self.__class__.__name__
         self.framework = framework
         self.connector = None
-        self.menu_group_name = menu_group_name
-        self.debug = DEBUG
+        self.menu_group_name = settings['menu_group_name']
+        self.debug = settings['debug']
         self.dynamic_menu_data = {}
 
         # flame module is only avaliable when a 
@@ -666,7 +689,7 @@ class flameMenuApp(object):
 class flameKitsuConnector(object):
     def __init__(self, framework):
         self.name = self.__class__.__name__
-        self.app_name = app_name
+        self.app_name = settings['app_name']
         self.framework = framework
         self.connector = self
         self.log('waking up')
@@ -675,8 +698,10 @@ class flameKitsuConnector(object):
         self.prefs_user = self.framework.prefs_dict(self.framework.prefs_user, self.name)
         self.prefs_global = self.framework.prefs_dict(self.framework.prefs_global, self.name)
 
+        self.gazu = gazu
+
+        '''
         site_packages_folder = self.framework.site_packages_folder
-        
         if not os.path.isdir(site_packages_folder):
             self.log('unable to find site packages folder at %s' % site_packages_folder)
             self.gazu = None
@@ -685,6 +710,7 @@ class flameKitsuConnector(object):
             import gazu
             self.gazu = gazu
             sys.path.pop(0)
+        '''
 
         self.gazu_client = None
 
@@ -6325,11 +6351,11 @@ def cleanup(apps, app_framework, kitsuConnector):
     if kitsuConnector: kitsuConnector.terminate_loops()
     
     if apps:
-        if DEBUG:
+        if settings.get('debug', False):
             print ('[DEBUG %s] unloading apps:\n%s' % ('flameMenuSG', pformat(apps)))
         while len(apps):
             app = apps.pop()
-            if DEBUG:
+            if settings.get('debug', False):
                 print ('[DEBUG %s] unloading: %s' % ('flameMenuSG', app.name))
             del app        
         del apps
@@ -6356,7 +6382,7 @@ def load_apps(apps, app_framework, kitsuConnector):
         traceback.print_tb(e.__traceback__)
 
     app_framework.apps = apps
-    if DEBUG:
+    if settings.get('debug', False):
         print ('[DEBUG %s] loaded:\n%s' % (app_framework.bundle_name, pformat(apps)))
 
 def rescan_hooks():
@@ -6376,7 +6402,7 @@ def app_initialized(project_name):
     global app_framework
     global kitsuConnector
     global apps
-    app_framework = flameAppFramework(app_name = app_name)
+    app_framework = flameAppFramework(app_name = settings['app_name'])
     print ('PYTHON\t: %s initializing' % app_framework.bundle_name)
     kitsuConnector = flameKitsuConnector(app_framework)
     load_apps(apps, app_framework, kitsuConnector)
@@ -6408,7 +6434,7 @@ def get_main_menu_custom_ui_actions():
         menu.append(flameMenuProjectconnectApp.build_menu())
     if menu:
         order = len(menu[0].get('actions')) + 1
-        version_string = str(__version__)
+        version_string = settings['version']
         gazu_version = flameMenuProjectconnectApp.connector.get_gazu_version()
         zou_version = flameMenuProjectconnectApp.connector.get_api_version()
         if gazu_version:
@@ -6426,7 +6452,7 @@ def get_main_menu_custom_ui_actions():
             except:
                 pass
     
-    if DEBUG:
+    if settings.get('debug', False):
         print('main menu update took %s' % (time.time() - start))
 
     return menu
@@ -6480,7 +6506,7 @@ def get_media_panel_custom_ui_actions():
             except:
                 pass
     
-    if DEBUG:
+    if settings.get('debug', False):
         print('media panel menu update took %s' % (time.time() - start))
     
     return menu
@@ -6507,7 +6533,7 @@ def get_batch_custom_ui_actions():
             except:
                 pass
 
-    if DEBUG:
+    if settings.get('debug', False):
         print('batch menu update took %s' % (time.time() - start))
 
     return menu
