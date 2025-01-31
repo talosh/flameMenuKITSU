@@ -345,6 +345,8 @@ class flameAppFramework(object):
         except Exception as e:
             self.log('unable to save preferences to %s' % prefs_file_path)
             self.log(e)
+            for key, value in self.prefs.items():
+                print(f"Key: {key}, Type: {type(value)}")
 
         try:
             with open(prefs_user_file_path, 'w') as prefs_file:
@@ -354,6 +356,8 @@ class flameAppFramework(object):
         except Exception as e:
             self.log('unable to save preferences to %s' % prefs_user_file_path)
             self.log(e)
+            for key, value in self.prefs.items():
+                print(f"Key: {key}, Type: {type(value)}")
 
         try:
             with open(prefs_global_file_path, 'w') as prefs_file:
@@ -363,6 +367,8 @@ class flameAppFramework(object):
         except Exception as e:
             self.log('unable to save preferences to %s' % prefs_global_file_path)
             self.log(e)
+            for key, value in self.prefs.items():
+                print(f"Key: {key}, Type: {type(value)}")
             
         return True
 
